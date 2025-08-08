@@ -1,0 +1,128 @@
+🖥 Qué es IRC
+Es un protocolo, o sea, un conjunto de reglas que explican cómo deben hablarse un cliente y un servidor para que se entiendan.
+
+
+🔌 Cómo funciona a nivel general
+- Cliente IRC → El programa que usa el usuario para conectarse y chatear (por ejemplo, irssi, HexChat, mIRC, etc.).
+- Servidor IRC → El programa que recibe y envía mensajes entre todos los clientes.
+
+
+El cliente envía mensajes al servidor usando el protocolo IRC, y el servidor los retransmite a las personas o canales correctos.
+
+🗣 El idioma de IRC: los mensajes
+[:prefijo] COMANDO [param1] [param2] ... [:último parámetro]
+
+Prefijo (:prefijo) → Opcional. Indica quién envía el mensaje (por ejemplo, :nick!user@host).
+Comando → Puede ser:
+    Un comando textual (NICK, JOIN, PRIVMSG, PING…).
+    Un código numérico (por ejemplo, 001 significa "Welcome").
+Parámetros → Datos adicionales que el comando necesita.
+Último parámetro → (opcional) → todo lo que viene después de :, puede contener espacios (usado para texto de mensajes).
+
+EJEMPLO de comandos basicos:
+
+📌 NICK Dany --> Establecer o cambiar tu nickname
+        Tu servidor debe:
+            - Verificar que el nick no esté en uso.
+            - Guardar ese nick en la sesión del cliente.
+            - Si está en uso, responder con un error:   
+                :server 433 * juan :Nickname is already in use
+
+📌 USER Dany :Daniela Torretta     --> Registra información del usuario.
+        Tu servidor debe:
+            - Guardar estos datos en la estructura del cliente.
+            - Solo permitir el registro completo cuando tenga NICK y USER definidos.
+
+📌 JOIN #general --> Unirse a un canal
+        Tu servidor debe:
+            - Si el canal no existe, crearlo.
+            - Agregar al usuario a la lista de miembros del canal.
+            - Notificar al resto de usuarios en ese canal:
+                :Dany!~user@host JOIN #general
+
+📌 PRIVMSG #general :Hola a todos! --> Enviar mensaje a un canal
+o
+📌 PRIVMSG Miguel :¿Cómo estás? --> Mensaje privado a un usuario
+        Tu servidor debe:
+            - Si el destino es un canal (#general), reenviar el mensaje a todos los miembros del canal (menos al emisor).
+            - Si es un usuario (Miguel), enviar el mensaje solo a ese cliente
+
+📌 QUIT :Nos vemos --> Salir el Servidor
+        Tu servidor debe:
+            - Notificar a todos los canales donde estaba el cliente que se fue. (tiene que mandar el mensaje "nos vemos" ?????)
+            - Cerrar el socket del cliente.
+
+
+🛠 3. Lo que tu servidor tiene que hacer
+Tu servidor IRC debe:
+
+- Aceptar conexiones TCP de múltiples clientes a la vez.
+- Leer mensajes que vengan del cliente y parsearlos (separar comando, parámetros, texto).
+- Actualizar el estado interno (lista de usuarios, canales, etc.).
+- Responder según el protocolo.
+- Reenviar mensajes a otros clientes cuando sea necesario (por ejemplo, un PRIVMSG a todos en el canal).
+
+PARSER
+🛠 cómo parsear un mensaje IRC 
+[:prefijo] COMANDO [params] ... [:trailing]    --> formato base
+
+Ejemplo simple
+    - PRIVMSG #general :Hola a todos
+
+Cuando tu servidor recibe algo por socket (ej: con recv()), obtendrás una línea como:
+"PRIVMSG #general :Hola a todos\r\n"         -- > "\r\n" !!
+
+Pasos:
+
+1. Quitar \r\n del final.
+2. Separar prefix (si empieza con :) --> Si la primera letra es :, todo hasta el primer espacio es el prefix.
+3. Separar comando -- > Lo siguiente hasta el primer espacio.
+4. Separar parámetros y trailing
+    --> Lo que esté antes de un : es lista de parámetros (split por espacios).
+    --> Lo que esté después de : es el texto final (trailing).
+
+PARAMS ES UN ARRAY YA QUE PUEDE HABER MAS DE UNO
+
+cositas del subjet:
+
+1)  No se espera que crees un programa para que el usuario chatee.
+    Vas a probar tu servidor usando clientes reales ya existentes (ej: irssi, Weechat, HexChat).
+    
+2)  En IRC real, los servidores pueden conectarse entre sí para formar redes.
+    Acá solo implementás un servidor que maneja conexiones directas con clientes. Nada de enlazar con otro servidor.
+
+3)  si un cliente se queda sin enviar nada, tu servidor no debe quedarse esperando indefinidamente y dejar colgados a los demás.
+
+4)  No podés usar fork() para crear un proceso por cliente
+    En cambio, vas a usar un único proceso y todos los sockets van a estar en modo no bloqueante 
+    (fcntl(fd, F_SETFL, O_NONBLOCK) por ejemplo).                --->> KHEEEEEEEEE
+    “No bloqueante” significa que funciones como recv() o send() no se quedan esperando si no hay datos. 
+    Si no hay nada que leer/escribir, devuelven inmediatamente.
+    
+5)  Tenés que manejar todas las operaciones con un único llamado a poll() (o select(), epoll(), kqueue() si preferís).
+    Esto incluye:
+        - Aceptar nuevas conexiones (listen() / accept()).
+        - Leer datos (recv()).  
+        - Enviar datos (send()).
+    O sea, todo pasa por el mismo bucle de eventos que revisa qué sockets están listos para operar.
+    SIEMPRE que hagamos read/recv o write/send tenemos que verificar antes con un poll() si hay datos para leer/escribir
+
+💡 En resumen:
+Vas a tener un único bucle principal más o menos así:
+
+while (true) 
+{
+    poll(fds, nfds, timeout); // espera hasta que haya algo listo
+    for (cada fd listo) 
+    {
+        if (fd == listening_socket) accept();
+        else if (fd listo para lectura) recv();
+        else if (fd listo para escritura) send();
+    }
+}
+
+1️⃣ ¿Qué es poll()?
+poll() es una syscall que le pide al kernel:
+    “Avisame cuando alguno de estos file descriptors esté listo para hacer algo (leer, escribir, o me avise de un error)”.
+    
+6)  Elegir un clientes IRC (WeeChat, HexChat, irssi, mIRC…) y usarlo como “cliente oficial” para probar tu servidor.
