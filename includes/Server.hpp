@@ -3,6 +3,11 @@
 #include <iostream>
 #include <vector>
 
+#include <poll.h>
+#include <netinet/in.h>  // para sockaddr_in en Unix/Linux/macOS
+#include <sys/socket.h>  // para funciones socket(), bind(), listen(), etc.
+#include <arpa/inet.h>   // para funciones como htons()
+
 #include "Client.hpp"
 #include "Channel.hpp"
 
@@ -21,28 +26,41 @@ class Channel;
 class Server
 {
     private:
-        int _port;  //Mantener el socket de escucha.
+        int _port;  //pasado incialmente como parametro, es el puerto que quieres que tu socket de escucha use (osea, el puerto por el cual el servidor va a aceptar conexiones)
         std::string _pass;
-        std::vector<Client> _clients; // Manejar la lista de clientes conectados.
-        std::vector<Channel> _channels; // Manejar la lista de clientes conectados.
-        bool _status; //signal to finish the execute loop. //como no hay mas de un objeto server a la vez, le quite el static
+        int _listeningSocket; //fd del socket que escucha conexiones y que luego sera enlazado con 'bind' a _port
+        std::vector<struct pollfd> _fds; //este array incluye todos los Fd de clientes conectados y del _listeningSocket
+        std::vector<Client> _clients; // Manejar la lista de clientes conectados. este array incluye todos los objetos clientes que tienen info
+        std::vector<Channel> _channels; 
+        
+
+        //struct sockaddr_in addr;    //VER SI LO PUEDO SACAR          //Define la dirección y puerto donde el servidor aceptará conexiones 
+        //struct sockaddr_in _clientAddr; //VER SI LO PUEDO SACAR     //Define la dirección y puerto donde el servidor conectara al nuevo cliente
+
+        bool _signalRecieved; //signal to finish the execute loop. //como no hay mas de un objeto server a la vez, le quite el static
+        
         
     public:
         Server();
         ~Server();
         
-        //methods
+        //Methods
         void init(int port, std::string pass);
-        void closeFds();
         void execute(); //(loop principal de poll).
+        void NewClient();
+        void NewData(int clientFd);
+
+        //Close
+        void ft_close(int Fd);
+        void RemoveFd(int Fd); //si no los uso por fuera de ft_close, eliminarlos del header y agregarlos a utils
+        void RemoveClient(int clientFd); //si no los uso por fuera de ft_close, eliminarlos del header y agregarlos a utils
+        
         
     //     void acceptConnection().
     //     void readFromClient(Client&).
     //     void writeToClient(Client&).
     //     void disconnectClient(Client&).
     
-        //getter
-        bool getStatus();
 
 
     // // Otros métodos importantes:

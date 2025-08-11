@@ -1,12 +1,3 @@
-/*main.cpp
-    - Arranca el servidor: parsea los argumentos (port, password).
-    - Inicializa el servidor TCP (socket + bind + listen).
-    - Entra en el loop principal con poll() (o equivalente).
-    - Gestiona eventos de socket: nueva conexión, lectura, escritura.
-    - Llama a la lógica del servidor para procesar mensajes.
-*/
-
-
 #include "../includes/Server.hpp"
 
 void printBanner()
@@ -48,11 +39,12 @@ int main (int ac, char** av)
         if (!portValidation(av[1]) || std::string(av[2]).empty()) //es necesario limitar el largo de la pass?
             std::cerr << "Error: Invalid Port or Password" << std::endl; return 1;
         
-        newServer.init(std::atoi(av[1]), std::string(av[2])); //TO DO
+        newServer.init(std::atoi(av[1]), std::string(av[2]));
         
-        while (newServer.getStatus() == false)
-            newServer.execute(); //TO DO (loop principal de poll).
+        std::cout << YELLOW << "Waiting for a client to get connected..." << RESET << std::endl;
+        newServer.execute(); //aca esta el loop principal de poll
         
+        newServer.ft_close(-42) //cierra todo al final de la ejecucion, pero no los esta removiendo
         newServer.closeFds(); //TO DO
     }
     catch(const std::exception& e) 

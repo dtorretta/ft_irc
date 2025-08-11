@@ -107,6 +107,9 @@ cositas del subjet:
     O sea, todo pasa por el mismo bucle de eventos que revisa qué sockets están listos para operar.
     SIEMPRE que hagamos read/recv o write/send tenemos que verificar antes con un poll() si hay datos para leer/escribir
 
+6)  Elegir un clientes IRC (WeeChat, HexChat, irssi, mIRC…) y usarlo como “cliente oficial” para probar tu servidor.
+
+
 💡 En resumen:
 Vas a tener un único bucle principal más o menos así:
 
@@ -122,7 +125,29 @@ while (true)
 }
 
 1️⃣ ¿Qué es poll()?
-poll() es una syscall que le pide al kernel:
+poll() es una syscall que revisa un conjunto de file descriptors y te dice cuáles están listos
     “Avisame cuando alguno de estos file descriptors esté listo para hacer algo (leer, escribir, o me avise de un error)”.
     
-6)  Elegir un clientes IRC (WeeChat, HexChat, irssi, mIRC…) y usarlo como “cliente oficial” para probar tu servidor.
+en poll el fds es un array de fds que contiene:
+- El socket que escucha conexiones nuevas (listening_socket). --> para saber cuándo llega un nuevo cliente
+- Todos los sockets de clientes conectados. --> los sockets nuevos creados por accept()
+- Cualquier otro descriptor que quieras vigilar (pipes internos, etc.)
+
+Un socket es simplemente un canal de comunicación entre dos programas (cliente y servidor)
+
+Los sockets permiten: comunicacion en tiempo real entre servidor y cliente, de esta forma, ante cuando nueva actualizacion, 
+el server puede enviar una notificacion y comunicar al cliente
+
+Antes de los sockets (o sin ellos), para que un cliente “se entere” si hay algo nuevo en el servidor, 
+normalmente hacía peticiones periódicas (polling): preguntaba cada X segundos si había novedades.
+
+En el sistema operativo, cada socket está representado por un descriptor de archivo (FD)
+(un número entero que usa tu programa para leer y escribir datos).
+
+1. Listening socket = un fd que está “escuchando” conexiones nuevas. Está esperando activamente a que un cliente intente conectarse.+
+2. Cuando un cliente se conecta, el servidor llama a accept()
+    - accept() no crea un nuevo listening socket.
+    Lo que hace es generar un nuevo socket (un nuevo fd) que representa la conexión específica con ese cliente.
+    Este nuevo socket es el que usas para leer y escribir datos con ese cliente.
+3. ¿Qué pasa con el listening socket después de accept()?
+    - El listening socket sigue existiendo y sigue escuchando para futuras conexiones entrantes.
