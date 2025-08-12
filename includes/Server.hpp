@@ -26,22 +26,24 @@ class Channel;
 class Server
 {
     private:
-        int _port;  //pasado incialmente como parametro, es el puerto que quieres que tu socket de escucha use (osea, el puerto por el cual el servidor va a aceptar conexiones)
-        std::string _pass;
-        int _listeningSocket; //fd del socket que escucha conexiones y que luego sera enlazado con 'bind' a _port
-        std::vector<struct pollfd> _fds; //este array incluye todos los Fd de clientes conectados y del _listeningSocket
-        std::vector<Client> _clients; // Manejar la lista de clientes conectados. este array incluye todos los objetos clientes que tienen info
-        std::vector<Channel> _channels; 
+        int _port; //old name: port  //pasado incialmente como parametro, es el puerto que quieres que tu socket de escucha use (osea, el puerto por el cual el servidor va a aceptar conexiones)
+        std::string _pass; //old name: password
+        int _listeningSocket; //old name: server_fdsocket   //fd del socket que escucha conexiones y que luego sera enlazado con 'bind' a _port
+        std::vector<struct pollfd> _fds; //old name: fds        //este array incluye todos los Fd de clientes conectados y del _listeningSocket
+        std::vector<Client> _clients; //old name: clients   // Manejar la lista de clientes conectados. este array incluye todos los objetos clientes que tienen info
+        std::vector<Channel> _channels;  //old name: channels 
+        bool _signalRecieved; //old name: Signal     //signal to finish the execute loop. //como no hay mas de un objeto server a la vez, le quite el static
+
+        //DESCARTADAS
+        //struct pollfd new_cli;   //lo puse directo en NewClient() y se llama 'struct pollfd newClientPollFd'
+        //struct sockaddr_in add;    //lo puse directo en init() y se llama  'struct sockaddr_in addr'      //Define la dirección y puerto donde el servidor aceptará conexiones 
+        //struct sockaddr_in cliadd; //lo puse directo en NewClient() y se llama  'struct sockaddr_in clientAddr'     //Define la dirección y puerto donde el servidor conectara al nuevo cliente
+
         
-
-        //struct sockaddr_in addr;    //VER SI LO PUEDO SACAR          //Define la dirección y puerto donde el servidor aceptará conexiones 
-        //struct sockaddr_in _clientAddr; //VER SI LO PUEDO SACAR     //Define la dirección y puerto donde el servidor conectara al nuevo cliente
-
-        bool _signalRecieved; //signal to finish the execute loop. //como no hay mas de un objeto server a la vez, le quite el static
         
         
     public:
-        Server();
+        Server(); //⚠️ TO DO!!
         ~Server();
         
         //Methods
@@ -55,29 +57,12 @@ class Server
         void RemoveFd(int Fd); //si no los uso por fuera de ft_close, eliminarlos del header y agregarlos a utils
         void RemoveClient(int clientFd); //si no los uso por fuera de ft_close, eliminarlos del header y agregarlos a utils
         
-        
+        //Getters
+        Client* get_Client(int fd);
+
+        // NO LAS DESCARTE, SOLO NO LLEGUE A IMPLEMENTARLAS
     //     void acceptConnection().
     //     void readFromClient(Client&).
     //     void writeToClient(Client&).
     //     void disconnectClient(Client&).
-    
-
-
-    // // Otros métodos importantes:
-    // void handleCommand(int clientFd, const std::string& command);  // interpretar comandos IRC
-    // void broadcastToChannel(const std::string& channel, const std::string& message, int exceptFd = -1); // enviar mensajes a todos de un canal
-
-    // // Manejo señales para cerrar el server
-    // static void SignalHandler(int signum);
 };
-
-
-/*
-Clase Server
-Responsabilidades:
-    Mantener el socket de escucha.
-    Manejar la lista de clientes conectados.
-    Agregar/quitar clientes.
-    Gestionar el estado global (canales, usuarios).
-    Procesar eventos recibidos por poll() (aceptar conexiones, leer datos, enviar respuestas).
-*/

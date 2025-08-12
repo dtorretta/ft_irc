@@ -1,4 +1,22 @@
 #include "../includes/Server.hpp"
+
+
+Server::~Server()
+{
+    for(size_t i = 0; i < _clients.size(); i++)
+        std::cout << YELLOW << "Client <" << _clients[i].fd  << "> Disconnected" << RESET << std::endl; //ver si tengo que hacer un getter del fd para el client
+
+    for (size_t i = 0; i < _fds.size(); i++) //incluye el _listeningSocket 
+        close(_fds[i].fd);
+
+    _clients.clear(); //esto me ahorra de hacer un remove elemento por elemento
+    _fds.clear(); //esto me ahorra de hacer un remove elemento por elemento
+    _listeningSocket = -1;
+}
+
+
+
+
 /*
  * Inicializa el servidor creando el socket que escuchará las conexiones entrantes (socket)
  * Configura el socket para evitar problemas al reiniciar y para que no bloquee el programa (setsockopt & fcntl)
@@ -34,6 +52,7 @@ void Server::init(int port, std::string pass)
     //solo en estos casos, definimos tambien los elementos de addr, necesarios para usar 'bind' (en el caso de clientes nuevos omitimos esto)
     //Esta estructura es la manera que el sistema operativo usa para representar direcciones de red IPv4 en C/C++
     struct sockaddr_in addr
+    memset(&addr, 0, sizeof(addr)); //por buena practica
     addr.sin_family = AF_INET; // Type of adress: IPv4
     addr.sin_port = htons(_port); //es el puerto que el socket de escucha usara, convertido a red (big endian)
     addr.sin_addr.s_addr = INADDR_ANY; //escucha en todas las interfaces (todas las IPs del servidor).
@@ -78,6 +97,27 @@ void Server::execute()
         }
     }
 }
+/*
+Cuando recv() no leyó todo el mensaje porque el buffer es limitado (ejemplo 1024 bytes) y quedaron datos sin leer, esos datos ya están en el buffer interno del sistema operativo (SO) para esa conexión TCP.
+
+Entonces:
+
+Aunque el cliente no haya enviado más datos nuevos,
+El socket sigue teniendo datos pendientes en su cola interna (buffer del SO) que todavía no leíste,
+Por eso, en la siguiente llamada a poll(), el descriptor del socket sigue marcándose con POLLIN, indicando que hay datos para leer,
+Y al llamar a recv() de nuevo, obtendrás el siguiente fragmento del mensaje.
+
+
+Cliente envía datos → llegan al buffer interno del socket en el servidor.
+poll() → detecta que hay datos (POLLIN).
+recv() → lees N bytes (por ejemplo 1024), y esos N bytes se eliminan del buffer interno del SO.
+Si quedó más en el buffer, poll volverá a marcar POLLIN en el siguiente ciclo, incluso si el cliente ya no manda nada más.
+Cuando lees todo (el buffer interno queda vacío),
+    poll ya no detecta datos → no se ejecuta NewData() hasta que lleguen má
+
+*/
+
+
 
 /*
     * Accepts a new incoming connection from the listening socket and prepares it to be handled by the server (accept)
@@ -89,31 +129,29 @@ void Server::execute()
 */
 void Server::NewClient()
 {
-    //⚠️ memset(&cliadd, 0, sizeof(cliadd));   //VEEEEEEEEEEEEEEEEEEEEEEEEEEEER
-
     //al crear un cliente se necesita crear un nuevo elemento de la estructura sockaddr_in para indicar a dónde debe enviar datos.
-    struct sockaddr_in _clientAddr; //Ver si no la uso de forma global, entonces la puedo definir aca
-    socklen_t addrLen = sizeof(_clientAddr);
-    int clientSocket = accept(_listeningSocket, (struct sockaddr*)&_clientAddr, &addrLen);
+    struct sockaddr_in clientAddr; //Ver si no la uso de forma global, entonces la puedo definir aca
+    memset(&clientAddr, 0, sizeof(clientAddr)); //limmpia la memoria, PSRECE QUE NO ES ESTRICTAMENTE NECESARIO
+    socklen_t addrLen = sizeof(clientAddr);
+    int clientSocket = accept(_listeningSocket, (struct sockaddr*)&clientAddr, &addrLen);
     if (clientSocket < 0)
         throw(std::runtime_error("Failed to accept a client"));
 
     if (fcntl(clientSocket, F_SETFL, O_NONBLOCK) < 0) //poner el socket cliente en modo no bloqueante
         throw(std::runtime_error("Failed to set non-blocking mode on client socket"));
 
-    //new node of the pollfd struct to add to the _fds 
+    //2. new pollfd node to add to the _fds vector
     struct pollfd newClientPollFd;
     newClientPollFd.fd = clientSocket; //el socket que debe vigilar: clientSocket
     newClientPollFd.events = POLLIN; //eventos que te interesan: datos que envíe el cliente
     newClientPollFd.revents = 0; // eventos que ocurrieron: se inicializa a cero.
+    _fds.push_back(newClientPollFd);
 
-    _fds.push_back(newClientPollFd); //añades este fd a tu vector _fds
-
-    Client newClient; //create the Client object   ⚠️⚠️⚠️⚠️⚠️ NO DEBERIA SER POINTER???
+    //3. new client node to add to the _clients vector
+    Client newClient;
     newClient.set_fd(clientSocket);
-	newClient.set_IPaddress(inet_ntoa((_clientAddr.sin_addr))); //inet_ntoa --> convierte la dirección IPv4 binaria (in_addr) en una cadena legible 
-
-    _clients.push_back(newClient); //agrega objeto a vector _clients
+	newClient.set_IPaddress(inet_ntoa((clientAddr.sin_addr))); //inet_ntoa --> convierte la dirección IPv4 binaria (in_addr) en una cadena legible 
+    _clients.push_back(newClient);
     
     std::cout << YELLOW << "Client connected: fd " << clientSocket << RESET << std::endl;
 }
@@ -130,25 +168,61 @@ void Server::NewClient()
 void Server::NewData(int clientFd)
 {
     char buffer[1024];
-    int bytesReceived = recv(clientFd, buffer, sizeof(buffer) - 1, 0);
-    if (bytesReceived <= 0)
+    memset(buffer, 0, sizeof(buffer));  // Buena práctica: limpiar buffer TEMPORAL
+    size_t bytesReceived = recv(clientFd, buffer, sizeof(buffer) - 1, 0);
+    
+    if (bytesReceived <= 0) // el cliente cerró o hubo error
     {
-        if (bytesReceived == 0)
-            std::cout << YELLOW << "Client disconnected: fd " << clientFd << RESET << std::endl;
-        else
-            std::cerr << RED << "Error receiving data from fd " << clientFd << RESET << std::endl;
-        
-        ft_close(clientFd);  // --> removeClient   RemoveFds    close(fd)
-        // RmChannels(fd);
-
+        std::cerr << RED << "Connection closed or error on client's fd " << clientFd << RESET << std::endl; //NO USAMOS THROW porque el servidor debería seguir funcionando para otros clientes.
+        ft_close(clientFd); // RemoveClient, RemoveFds, close(fd)
+        // RmChannels(fd); //⚠️ TO DO!!
         return;
     }
     buffer[bytesReceived] = '\0';
-    
-    //⚠️ else...........
+
+    Client* currentClient = get_Client(clientFd); // Devuelve puntero al cliente encontrado
+    if (!currentClient) 
+        throw std::runtime_error("error client doesn't exist"); 
+
+    // Acumular los datos recibidos en el buffer privado del cliente, NO sobrescribir
+    currentClient->set_buffer(buffer); //usamos '->' porque es un puntero
+        
+    std::string& accumulatedBuffer = currentClient->get_buffer();
+
+    // Revisar si el buffer acumulado contiene uno o más comandos completos terminados en \r\n
+    if (accumulatedBuffer.find("\r\n") == std::string::npos)
+        return; //si NO encuentra, vuelve a poll() para esperar más datos, no es el fin del comando IRC (todo el resto no se ejecuta, no se limpia el buffer del cliente)
+     
+    // Separar todos los comandos completos en el buffer acumulado
+    std::vector<std::string> commands = split_receivedBuffer(accumulatedBuffer);
+    currentClient->set_cmd(commands); //cada comando siempre esta delimitado por \r\n
+
+    // Parsear cada comando
+    for (size_t i = 0; i < currentClient->get_cmd().size(); i++)
+        this->parser(currentClient->get_cmd()[i], clientFd); //⚠️ TO DO!! ANTES DE EMPEZAR CON ESTO, HACER UNITESTS
+
+    //clean the CLIENT buffer after the parser
+    currentClient->clearBuffer(); //⚠️ TO DO!!
 }
 
+// Función para separar el buffer por delimitador "\r\n"
+std::vector<std::string> Server::split_receivedBuffer(std::string buffer) //no neesita ser & porque no vamos a modificar el buff, solo queremos leerlo
+{
+    std::vector<std::string> commands;
+    std::string line;
+    size_t start = 0;
+    size_t end;
 
+    // Buscar mientras haya "\r\n"
+    while ((end = buffer.find("\r\n", start)) != std::string::npos) 
+    {
+        line = buffer.substr(start, end - start);
+        if (!line.empty()) 
+            commands.push_back(line); // Guardar el comando
+        start = end + 2; // Saltar "\r\n"
+    }
+    return commands;
+}
 
 
 
@@ -158,40 +232,19 @@ void Server::NewData(int clientFd)
  *      - Luego, hacer clear() en el vector que almacena esos fds, para eliminar todos los elementos del vector y dejarlo vacío.
  *  cuando se quiera eliminar un Fd en particular, el parametro sera algun valor > 0
 */
+
 void Server::ft_close(int Fd)
 {
-    if (Fd < 0) // Cerrar y limpiar todo (agregar otras cosas como channels o buffers)
-    {
-        for(size_t i = 0; i < _clients.size(); i++)
-        {
-            std::cout << YELLOW << "Client <" << _clients[i].fd  << "> Disconnected" << RESET << std::endl; //ver si tengo que hacer un getter del fd para el client
-        }
-
-        for (size_t i = 0; i < _fds.size(); i++) //incluye el _listeningSocket 
-        {
-            close(_fds[i].fd);
-        }
-
-        _clients.clear(); //esto me ahorra de hacer un remove elemento por elemento
-        _fds.clear(); //esto me ahorra de hacer un remove elemento por elemento
-        _listeningSocket = -1;
-    }
-
-    else //remover 1 en particular
-    {
-        RemoveClient(Fd); //si nunca los voy a llamar por fuera de esta funcion, puedo quitarlols del header y agregarlos a utils
-        RemoveFd(Fd);  //si nunca los voy a llamar por fuera de esta funcion, puedo quitarlols del header y agregarlos a utils
-        close(Fd)
-    }
+    RemoveClient(Fd); //si nunca los voy a llamar por fuera de esta funcion, puedo quitarlols del header y agregarlos a utils
+    RemoveFd(Fd);  //si nunca los voy a llamar por fuera de esta funcion, puedo quitarlols del header y agregarlos a utils
+    close(Fd)
 }
-
-
 
 void Server::RemoveClient(int clientFd)
 {
     for (size_t i = 0; i < _clients.size(); i++)
     {
-        if (_clients[i].fd == clientFd)   //ver si tengo que hacer un getter del fd para el client
+        if (_clients[i].get_fd() == clientFd)
         {
             _clients.erase(_clients.begin() + i);
             break;
@@ -203,10 +256,35 @@ void Server::RemoveFd(int Fd)
 {
     for (size_t i = 0; i < _fds.size(); i++)
     {
-        if (_fds[i].fd == Fd)
+        if (_fds[i].get_fd() == Fd)
         {
             _fds.erase(_fds.begin() + i);
             break;
         }
     }
 }
+
+
+
+//Getters
+Client* Server::get_Client(int fd)
+{
+    for (size_t i = 0; i < _clients.size(); i++) 
+    {
+        if (_clients[i].get_fd() == fd) {
+            return &_clients[i]; // Devuelve puntero al cliente encontrado
+        }
+    }
+    return NULL; // No encontrado
+}
+
+
+
+/*
+
+_clients[i].get_fd() 
+
+_clients es un vector de clientes que esta dentro de eserver, en la posicion [i] hace referencia a un nodo especifico de la clase Client. 
+para acceder a ingotmacion de ese nodo especifico tenemos que usar un getter porque es otra clase
+
+*/
