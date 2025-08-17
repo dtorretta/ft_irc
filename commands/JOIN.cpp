@@ -1,7 +1,6 @@
 #include "../includes/Server.hpp"
 #include "../includes/Channel.hpp"
 
-
 std::vector<std::pair<std::string, std::string> > Server::SplitJoin(std::string cmd)
 {
 	// Split by spaces
@@ -49,7 +48,7 @@ void	Server::Channel_Exist(Channel *channel, Client *client, int fd, std::string
 
 	// Check user channel limit
 	int count = 0;
-	for (size_t i = 0; i < _channels.size(); i++)
+	for (size_t i = 0; i < channels.size(); i++)
 	{
 		if (this->channels[i].GetClientInChannel(client->GetNickName()))
 			count++;
@@ -63,26 +62,25 @@ void	Server::Channel_Exist(Channel *channel, Client *client, int fd, std::string
 	// Check channel modes
 	if (!channel->GetPassword().empty() && channel->GetPassword() != key)
 	{
-		_sendResponse(ERROR_WRONG_KEY(client->GetNickName(), channel->GetName()), fd);
+		_sendResponse(ERROR_WRONG_KEY(client->GetNickName(), name), fd);
 		return ;
 	}
 	// 1. Channel is invite-only
 	if (channel->getModeAtindex(0)) // Check 'i' mode at index 0
 	{
-		std::string channel_name = channel->GetName();
-		if (!client->GetInviteChannel(channel_name))
+		if (!client->GetInviteChannel(name))
 		{
-			_sendResponse(ERROR_INVITE_ONLY(client->GetNickName(), channel->GetName()), fd);
+			_sendResponse(ERROR_INVITE_ONLY(client->GetNickName(), name), fd);
 			return ;
 		}
-		client->RmChannelInvite(channel_name);
+		client->RmChannelInvite(name);
 	}
 	// 2. Channel has user limit
 	if (channel->getModeAtindex(4)) // Check 'l' mode at index 4
 	{
 		if (channel->GetClientsNumber() >= channel->GetLimit())
 		{
-			_sendResponse(ERROR_CHANNEL_FULL(client->GetNickName(), channel->GetName()), fd);
+			_sendResponse(ERROR_CHANNEL_FULL(client->GetNickName(), name), fd);
 				return;
 		}
 	}
@@ -94,12 +92,12 @@ void	Server::Channel_Exist(Channel *channel, Client *client, int fd, std::string
 	channel->sendTo_all(MSG_USER_JOIN(client->getHostname(), client->getIpAdd(), name));
 
 	// 2. Names list to joiner only
-	_sendResponse(MSG_NAMES_LIST(client->GetNickName(), channel->GetName(), channel->clientChannel_list()), fd);
-	_sendResponse(MSG_NAMES_END(client->GetNickName(), channel->GetName()), fd);
+	_sendResponse(MSG_NAMES_LIST(client->GetNickName(), name, channel->clientChannel_list()), fd);
+	_sendResponse(MSG_NAMES_END(client->GetNickName(), name), fd);
 
 	// 3. Topic to joiner only (if exists)
 	if (!channel->GetTopicName().empty())
-		_sendResponse(MSG_CHANNEL_TOPIC(client->GetNickName(), channel->GetName(), channel->GetTopicName()), fd);
+		_sendResponse(MSG_CHANNEL_TOPIC(client->GetNickName(), name, channel->GetTopicName()), fd);
 }
 
 void	Server::Channel_Not_Exist(std::string channel_name, Client *client, int fd)
@@ -117,12 +115,12 @@ void	Server::Channel_Not_Exist(std::string channel_name, Client *client, int fd)
 	channel->sendTo_all(MSG_USER_JOIN(client->getHostname(), client->getIpAdd(), channel_name));
 
 	// 2. Names list to joiner only
-	_sendResponse(MSG_NAMES_LIST(client->GetNickName(), channel->GetName(), channel->clientChannel_list()), fd);
-	_sendResponse(MSG_NAMES_END(client->GetNickName(), channel->GetName()), fd);
+	_sendResponse(MSG_NAMES_LIST(client->GetNickName(), channel_name, channel->clientChannel_list()), fd);
+	_sendResponse(MSG_NAMES_END(client->GetNickName(), channel_name), fd);
 
 	// 3. Topic to joiner only (if exists)
 	if (!channel->GetTopicName().empty())
-		_sendResponse(MSG_CHANNEL_TOPIC(client->GetNickName(), channel->GetName(), channel->GetTopicName()), fd);
+		_sendResponse(MSG_CHANNEL_TOPIC(client->GetNickName(), channel_name, channel->GetTopicName()), fd);
 }
 
 void	Server::Join(std::string cmd, int fd)
@@ -175,6 +173,4 @@ void	Server::Join(std::string cmd, int fd)
 		else
 			Channel_Not_Exist(channel_name, client, fd);
 	}
-
-
 }

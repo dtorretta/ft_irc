@@ -1,9 +1,11 @@
 Nombre original de funciones que faltan para:
 
 JOIN:
+
+split_cmd(std::string cmd) (Server)
+-sendResponse() (Server)
+
 GetChannel (std::string channel_name) (Channel)
-GetClient (int fd) (Client)
-split_cmd(std::string cmd)
 get_client (Channel)
 get_admin (Channel)
 GetName (Channel)
@@ -15,11 +17,14 @@ GetLimit (Channel)
 add_client (Channel)
 sendTo_all (Channel)
 GetTopicName (Channel)
+
+GetClient (int fd) (Client)
 getHostname (Client)
 getIpAdd (Client)
 GetNickName (Client)
 GetInviteChannel (Client)
 RmChannelInvite (Client)
 clientChannel_list (Client)
--sendResponse()
+
+
 
