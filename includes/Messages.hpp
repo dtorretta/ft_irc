@@ -23,6 +23,7 @@
 #define ERROR_INVALID_MODE_PARAM(channelname, mode) ": 696 #" + channelname + " Invalid parameter for mode. " + mode + CRLF
 #define ERROR_KEY_ALREADY_SET(channelname) ": 467 #" + channelname + " Channel key is already configured. " + CRLF
 #define ERROR_UNRECOGNIZED_MODE(nickname, channelname, mode) ": 472 " + nickname + " #" + channelname + " " + mode + " :is an unknown channel mode" + CRLF
+#define ERROR_WRONG_KEY(nickname, channelname) (" : 475 " + nickname + " #" + channelname + " :Incorrect password for channel" + CRLF)
 #define ERROR_INSUFFICIENT_PARAMS(nickname) (": 461 " + nickname + " :Insufficient parameters provided." + CRLF)
 #define ERROR_CHANNEL_NOT_EXISTS(nickname, channelname) (": 403 " + nickname + " " + channelname + " :Channel does not exist" + CRLF)
 #define ERROR_NOT_CHANNEL_OP(channelname) (": 482 #" + channelname + " :You are not a channel operator" + CRLF)
@@ -34,6 +35,11 @@
 #define ERROR_INVALID_NICKNAME(nickname) (": 432 " + nickname + " :Invalid nickname format" + CRLF)
 #define ERROR_NOT_REGISTERED_YET(nickname) (": 451 " + nickname + " :Registration required!" + CRLF)
 #define ERROR_COMMAND_NOT_RECOGNIZED(nickname, command) (": 421 " + nickname + " " + command + " :Command not found" + CRLF)
+#define ERROR_TOO_MANY_TARGETS(nickname) (": 407 " + nickname + " :Too many channels" + CRLF)
+#define ERROR_IN_TOO_MANY_CHANNELS(nickname) (": 405 " + nickname + " :You have joined too many channels" + CRLF)
+#define ERROR_INVITE_ONLY(nick, chan) (": 473 " + nick + " " + chan + " :Cannot join channel (+i)" + CRLF)
+#define ERROR_CHANNEL_FULL(nick, chan) (": 471 " + nick + " " + chan + " :Cannot join channel (+l)" + CRLF)
+
 
 /*
 #define RPL_CONNECTED(nickname) (": 001 " + nickname + " : Welcome to the IRC server!" + CRLF)

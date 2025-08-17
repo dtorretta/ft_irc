@@ -1,0 +1,25 @@
+Nombre original de funciones que faltan para:
+
+JOIN:
+GetChannel (std::string channel_name) (Channel)
+GetClient (int fd) (Client)
+split_cmd(std::string cmd)
+get_client (Channel)
+get_admin (Channel)
+GetName (Channel)
+GetPassword (Channel)
+GetClientInChannel (Channel)
+getModeAtindex (Channel)
+GetClientsNumber (Channel)
+GetLimit (Channel)
+add_client (Channel)
+sendTo_all (Channel)
+GetTopicName (Channel)
+getHostname (Client)
+getIpAdd (Client)
+GetNickName (Client)
+GetInviteChannel (Client)
+RmChannelInvite (Client)
+clientChannel_list (Client)
+-sendResponse()
+
