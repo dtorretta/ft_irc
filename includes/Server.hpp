@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <vector>
+#include <sstream>
 
 #include <poll.h>
 #include <netinet/in.h>  // para sockaddr_in en Unix/Linux/macOS
@@ -59,6 +60,17 @@ class Server
         
         //Getters
         Client* get_Client(int fd);
+        
+		/******************/
+		/*    Commands    */
+		/******************/
+		//JOIN
+		void	Join(std::string cmd, int fd);
+		std::vector<std::pair<std::string, std::string> > SplitJoin(std::string cmd); //NEW!!!
+		void	Channel_Exist(Channel *channel, Client *client, int fd, std::string key, std::string name); //NEW!!!
+		void	Channel_Not_Exist(std::string channel_name, Client *client, int fd); //NEW!!!
+
+
 
         // NO LAS DESCARTE, SOLO NO LLEGUE A IMPLEMENTARLAS
     //     void acceptConnection().
