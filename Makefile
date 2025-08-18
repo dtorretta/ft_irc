@@ -1,7 +1,8 @@
 NAME = ircserv
 
-SRC	=   sources/main.cpp
-#  add the others
+SRC	=   sources/main.cpp \
+		sources/Client.cpp \
+		sources/Server.cpp
 
 INC =   -I ./includes/
    

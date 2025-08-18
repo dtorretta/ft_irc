@@ -1,21 +1,54 @@
 #include "../includes/Server.hpp"
 
+Server::Server(int port, std::string pass)
+{
+        this->_pass = pass;
+        this->_port = port;
+        this->_signalRecieved = false;
+        this->_listeningSocket = -1; 
+}
+
+Server::Server(Server const &copy)
+{
+    this->_pass = copy._pass;
+    this->_port = copy._port;
+    this->_signalRecieved = copy._signalRecieved;
+    this->_listeningSocket = copy._listeningSocket; 
+    this->_fds = copy._fds; 
+    this->_clients = copy._clients;
+    //this->_channels = copy._channels;
+}
+
+Server& Server::operator=(Server const &copy)
+{
+	if(this != &copy)
+    {
+        this->_pass = copy._pass;
+        this->_port = copy._port;
+        this->_signalRecieved = copy._signalRecieved;
+        this->_listeningSocket = copy._listeningSocket; 
+        this->_fds = copy._fds; 
+        this->_clients = copy._clients;
+        //this->_channels = copy._channels;
+    }
+    return(*this);
+}
 
 Server::~Server()
 {
     for(size_t i = 0; i < _clients.size(); i++)
-        std::cout << YELLOW << "Client <" << _clients[i].fd  << "> Disconnected" << RESET << std::endl; //ver si tengo que hacer un getter del fd para el client
+        std::cout << YELLOW << "Client <" << _clients[i].get_fd()  << "> Disconnected" << RESET << std::endl; //ver si tengo que hacer un getter del fd para el client
 
     for (size_t i = 0; i < _fds.size(); i++) //incluye el _listeningSocket 
         close(_fds[i].fd);
 
+    //necesito hacer algo especifico de remove channel?
+
+    _channels.clear();
     _clients.clear(); //esto me ahorra de hacer un remove elemento por elemento
     _fds.clear(); //esto me ahorra de hacer un remove elemento por elemento
-    _listeningSocket = -1;
+    this->_listeningSocket = -1;
 }
-
-
-
 
 /*
  * Inicializa el servidor creando el socket que escuchará las conexiones entrantes (socket)
@@ -31,13 +64,13 @@ Server::~Server()
     bind --> It associets the socket with the IP adress and port setted in the struct addr
     listen --> Pone el socket en modo escucha para conexiones entrantes.
 */
-void Server::init(int port, std::string pass)
+void Server::init()
 {
-    this->_pass = pass;
-    this->_port = port;
-    this->_signalRecieved = false;
+    // this->_pass = pass;
+    // this->_port = port;
+    // this->_signalRecieved = false;
 
-    _listeningSocket = socket(AF_INET, SOCK_STREAM, 0); //Crea un nuevo socket (fd) que usa la direccion IPv4 y el protocolo TCP (enviar/recibir datos de manera confiable)
+    this->_listeningSocket = socket(AF_INET, SOCK_STREAM, 0); //Crea un nuevo socket (fd) que usa la direccion IPv4 y el protocolo TCP (enviar/recibir datos de manera confiable)
     if (_listeningSocket < 0)
         throw(std::runtime_error("Failed to create socket"));
     
@@ -51,10 +84,10 @@ void Server::init(int port, std::string pass)
     //al crear un socket se necesita crear un nuevo elemento de la estructura sockaddr_in para indicar a qué dirección IP y puerto se debe “atar” ese socket 
     //solo en estos casos, definimos tambien los elementos de addr, necesarios para usar 'bind' (en el caso de clientes nuevos omitimos esto)
     //Esta estructura es la manera que el sistema operativo usa para representar direcciones de red IPv4 en C/C++
-    struct sockaddr_in addr
+    struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr)); //por buena practica
     addr.sin_family = AF_INET; // Type of adress: IPv4
-    addr.sin_port = htons(_port); //es el puerto que el socket de escucha usara, convertido a red (big endian)
+    addr.sin_port = htons(this->_port); //es el puerto que el socket de escucha usara, convertido a red (big endian)
     addr.sin_addr.s_addr = INADDR_ANY; //escucha en todas las interfaces (todas las IPs del servidor).
     memset(addr.sin_zero, 0, sizeof(addr.sin_zero)); //limpia los bytes de relleno para evitar basura en la estructura.
 
@@ -66,7 +99,7 @@ void Server::init(int port, std::string pass)
 
     //new node of the pollfd struct to add to the struct _fds.  en ella se configura como debe comportarse la funcion poll con el socket asignado (el de escucha)
     struct pollfd listenPollFd;
-    listenPollFd.fd = _listeningSocket; //el socket que debe vigilar: el listening socket
+    listenPollFd.fd = this->_listeningSocket; //el socket que debe vigilar: el listening socket
     listenPollFd.events = POLLIN; //eventos que te interesan: cuando hay nuevas conexiones pendientes
     listenPollFd.revents = 0; // eventos que ocurrieron: se inicializa a cero.
     
@@ -180,7 +213,7 @@ void Server::NewData(int clientFd)
     }
     buffer[bytesReceived] = '\0';
 
-    Client* currentClient = get_Client(clientFd); // Devuelve puntero al cliente encontrado
+    Client* currentClient = this->get_client(clientFd); // Devuelve puntero al cliente encontrado
     if (!currentClient) 
         throw std::runtime_error("error client doesn't exist"); 
 
@@ -199,10 +232,57 @@ void Server::NewData(int clientFd)
 
     // Parsear cada comando
     for (size_t i = 0; i < currentClient->get_cmd().size(); i++)
-        this->parser(currentClient->get_cmd()[i], clientFd); //⚠️ TO DO!! ANTES DE EMPEZAR CON ESTO, HACER UNITESTS
+        this->parser(currentClient->get_cmd()[i], clientFd);
 
     //clean the CLIENT buffer after the parser
-    currentClient->clearBuffer(); //⚠️ TO DO!!
+    currentClient->clearBuffer();
+}
+
+void Server::parser(std::string &cmd, int fd)
+{
+    cmd = trim(cmd);
+    if(cmd.empty())
+        return;
+
+    std::vector<std::string> commands = split_cmd(cmd);
+    
+    //normalize letters from command token to capital letters 
+    for (size_t i = 0; i < commands[0].size(); i++)
+        commands[0][i] = toupper(commands[0][i]);
+
+    static CommandMap handleCommands []= {
+	{"NICK", &Server::NICK}, //⚠️ TO DO!!
+	{"USER", &Server::USER}, //⚠️ TO DO!!
+	{"PASS", &Server::PASS}, //⚠️ TO DO!!
+	{"QUIT", &Server::QUIT},
+	};
+
+    for (int i = 0; i < 4; i++)
+	{
+		if(!commands.empty() && commands[0] == handleCommands[i]._name)
+            this->handleCommands[i]._handler(cmd, fd);
+	}
+
+    static CommandMap handleCommands2 []= {
+	{"JOIN", &Server::JOIN},
+	{"PRIVMSG", &Server::PRIVMSG},
+	{"KICK", &Server::KICK},
+	{"INVITE", &Server::INVITE},
+    {"TOPIC", &Server::TOPIC},
+    {"MODE", &Server::MODE},
+    {"PART", &Server::PART},
+	};
+
+    if(isregistered(fd))
+        for (int i = 0; i < 7; i++)
+        {
+            if(!commands.empty() && commands[0] == handleCommands2[i]._name)
+                this->handleCommands2[i]._handler(cmd, fd);
+            else
+                _sendResponse(ERROR_COMMAND_NOT_RECOGNIZED(get_client(fd)->get_nickname(), commands[0]), fd);
+        }
+    else
+        _sendResponse(ERROR_NOT_REGISTERED_YET(std::string("*")), fd);
 }
 
 // Función para separar el buffer por delimitador "\r\n"
@@ -216,7 +296,7 @@ std::vector<std::string> Server::split_receivedBuffer(std::string buffer) //no n
     // Buscar mientras haya "\r\n"
     while ((end = buffer.find("\r\n", start)) != std::string::npos) 
     {
-        line = buffer.substr(start, end - start);
+        line = trim(buffer.substr(start, end - start));
         if (!line.empty()) 
             commands.push_back(line); // Guardar el comando
         start = end + 2; // Saltar "\r\n"
@@ -224,50 +304,8 @@ std::vector<std::string> Server::split_receivedBuffer(std::string buffer) //no n
     return commands;
 }
 
-
-
-/*
- *  Cuando queremos eliminar y cerrar todo, el Fd es -42 y la secuencia correcta es:
- *      - Cerrar cada file descriptor individualmente (con close(fd)) para liberar el recurso del sistema operativo.
- *      - Luego, hacer clear() en el vector que almacena esos fds, para eliminar todos los elementos del vector y dejarlo vacío.
- *  cuando se quiera eliminar un Fd en particular, el parametro sera algun valor > 0
-*/
-
-void Server::ft_close(int Fd)
-{
-    RemoveClient(Fd); //si nunca los voy a llamar por fuera de esta funcion, puedo quitarlols del header y agregarlos a utils
-    RemoveFd(Fd);  //si nunca los voy a llamar por fuera de esta funcion, puedo quitarlols del header y agregarlos a utils
-    close(Fd)
-}
-
-void Server::RemoveClient(int clientFd)
-{
-    for (size_t i = 0; i < _clients.size(); i++)
-    {
-        if (_clients[i].get_fd() == clientFd)
-        {
-            _clients.erase(_clients.begin() + i);
-            break;
-        }
-    }
-}
-
-void Server::RemoveFd(int Fd)
-{
-    for (size_t i = 0; i < _fds.size(); i++)
-    {
-        if (_fds[i].get_fd() == Fd)
-        {
-            _fds.erase(_fds.begin() + i);
-            break;
-        }
-    }
-}
-
-
-
 //Getters
-Client* Server::get_Client(int fd)
+Client* Server::get_client(int fd) //con esta funcion accedemos al puntero cliente
 {
     for (size_t i = 0; i < _clients.size(); i++) 
     {
@@ -288,3 +326,4 @@ _clients es un vector de clientes que esta dentro de eserver, en la posicion [i]
 para acceder a ingotmacion de ese nodo especifico tenemos que usar un getter porque es otra clase
 
 */
+

@@ -3,11 +3,17 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
+#include <cstdlib> 
+#include <unistd.h> // para close()
+#include <fcntl.h>  // para fcntl, F_SETFL, O_NONBLOCK
+#include <cstring> //memset
+#include <string> //trim
 
 #include <poll.h>
 #include <netinet/in.h>  // para sockaddr_in en Unix/Linux/macOS
 #include <sys/socket.h>  // para funciones socket(), bind(), listen(), etc.
 #include <arpa/inet.h>   // para funciones como htons()
+
 
 #include "Client.hpp"
 #include "Channel.hpp"
@@ -22,7 +28,7 @@
 #define RESET	"\033[0m"
 
 class Client;
-class Channel;
+//class Channel;
 
 class Server
 {
@@ -40,26 +46,51 @@ class Server
         //struct sockaddr_in add;    //lo puse directo en init() y se llama  'struct sockaddr_in addr'      //Define la dirección y puerto donde el servidor aceptará conexiones 
         //struct sockaddr_in cliadd; //lo puse directo en NewClient() y se llama  'struct sockaddr_in clientAddr'     //Define la dirección y puerto donde el servidor conectara al nuevo cliente
 
-        
-        
-        
     public:
-        Server(); //⚠️ TO DO!!
-        ~Server();
+        Server(int port, std::string pass); // Constructor
+        Server(Server const &copy); // Copy constructor
+	    Server& operator=(Server const &copy); // Copy assignment operator
+        ~Server(); // Destructor
         
-        //Methods
-        void init(int port, std::string pass);
+        struct CommandMap  //tiene que estar detro de la clase??
+        {
+        const char* _name;
+        CommandHandler _handler;
+        };
+
+        /******************/
+		/*     Methods    */
+		/******************/
+        void init();
         void execute(); //(loop principal de poll).
         void NewClient();
         void NewData(int clientFd);
+        void parser(std::string &cmd, int fd);
 
-        //Close
+        /******************/
+		/*     Getters    */
+		/******************/
+        Client* get_client(int fd);
+       
+        //Parser???
+        void NICK(std::string nickname, int fd); //TODO
+        void USER(std::string nickname, int fd); //TODO
+        void PASS(std::string nickname, int fd); //TODO
+
+
+        std::vector<std::string> split_cmd(std::string &cmd);
+
+        /******************/
+		/*      Utils     */
+		/******************/
+        std::vector<std::string> split_receivedBuffer(std::string buffer);
+        void _sendResponse(std::string response, int fd);
+        bool isregistered(int fd); //old name: notregistered
         void ft_close(int Fd);
         void RemoveFd(int Fd); //si no los uso por fuera de ft_close, eliminarlos del header y agregarlos a utils
         void RemoveClient(int clientFd); //si no los uso por fuera de ft_close, eliminarlos del header y agregarlos a utils
-        
-        //Getters
-        Client* get_Client(int fd);
+        void RemoveChannel(std::string &name);
+        void RmChannels(int fd); //⚠️ TODO!!!!!!!!!!!
         
 		/******************/
 		/*    Commands    */
