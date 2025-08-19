@@ -151,6 +151,18 @@ En el sistema operativo, cada socket está representado por un descriptor de arc
     Este nuevo socket es el que usas para leer y escribir datos con ese cliente.
 3. ¿Qué pasa con el listening socket después de accept()?
     - El listening socket sigue existiendo y sigue escuchando para futuras conexiones entrantes.
+port.find_first_not_of("0123456789") == std::string::npos
+- Busca en el string port el primer carácter que NO sea un dígito del 0 al 9.
+- Si no encuentra ningún carácter que no sea dígito, devuelve std::string::npos.
+
+find_first_of("0123456789") == std::string::npos
+- Busca en el string el primer carácter que SI esté dentro del conjunto "0123456789" (es decir, el primer dígito)
+- Si no encuentra ningún dígito, devuelve std::string::npos.
+
+ find("\r\n") vs  find_first_of("\r\n")
+1. find Busca la subcadena exacta "\r\n"
+2. find_first_of busca un '\r' o un '\n'.
+
 
 Para evaluacion:
 1. netcat (nc) - BEST for evaluation
