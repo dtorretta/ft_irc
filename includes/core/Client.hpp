@@ -26,7 +26,8 @@ class Client
         //Getters
         std::string get_username();  //old name: GetUserName
         std::string get_nickname();  //old name: GetNickName
-        std::string ::get_hostname();
+        std::string get_hostname();
+        std::string get_IPaddress();
         int get_fd();  //old name: GetFd
         std::string& get_buffer();   //old name: getBuffer          //& porque no queremos que devuelva una copia sino un pointer
         std::vector<std::string>& get_cmd();  //old name: nueva          //devuelve un pointer
@@ -39,7 +40,7 @@ class Client
 
         //utils
         void clearBuffer();
-        
+
 };
 
 

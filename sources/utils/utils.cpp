@@ -1,11 +1,11 @@
-#include "../../includes/Server.hpp"
+#include "../../includes/core/Server.hpp"
 
 bool Server::isregistered(int fd)
 {
-    if (!get_client(fd) || 
-        get_client(fd)->get_nickname().empty() || 
-        get_client(fd)->get_username().empty() || 
-        get_client(fd)->get_nickname() == "*" || 
+    if (!get_client(fd) ||
+        get_client(fd)->get_nickname().empty() ||
+        get_client(fd)->get_username().empty() ||
+        get_client(fd)->get_nickname() == "*" ||
         !get_client(fd)->get_logedIn()) //⚠️ TO DO!!
         return false;
 	return true;
@@ -38,7 +38,7 @@ std::vector<std::string> Server::split_cmd(std::string &cmd)
     {
         commands.push_back(token);
         token.clear();
-    } 
+    }
     return commands;
 }
 

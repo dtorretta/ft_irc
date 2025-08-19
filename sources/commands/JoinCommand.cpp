@@ -1,5 +1,6 @@
-#include "../includes/Server.hpp"
-#include "../includes/Channel.hpp"
+#include "../../includes/core/Server.hpp"
+//#include "../../includes/core/Channel.hpp"
+#include "../../includes/commands/ChannelCommands.hpp"
 
 std::vector<std::pair<std::string, std::string> > Server::SplitJOIN(std::string cmd)
 {

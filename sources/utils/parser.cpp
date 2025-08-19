@@ -1,4 +1,4 @@
-#include "../includes/Server.hpp"
+#include "../../includes/core/Server.hpp"
 
 void Server::NICK(std::string nickname, int fd)
 {

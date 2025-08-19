@@ -1,11 +1,11 @@
-#include "../includes/Server.hpp"
+#include "../../includes/core/Server.hpp"
 
 Server::Server(int port, std::string pass)
 {
         this->_pass = pass;
         this->_port = port;
         this->_signalRecieved = false;
-        this->_listeningSocket = -1; 
+        this->_listeningSocket = -1;
 }
 
 Server::Server(Server const &copy)
@@ -13,8 +13,8 @@ Server::Server(Server const &copy)
     this->_pass = copy._pass;
     this->_port = copy._port;
     this->_signalRecieved = copy._signalRecieved;
-    this->_listeningSocket = copy._listeningSocket; 
-    this->_fds = copy._fds; 
+    this->_listeningSocket = copy._listeningSocket;
+    this->_fds = copy._fds;
     this->_clients = copy._clients;
     //this->_channels = copy._channels;
 }
@@ -26,8 +26,8 @@ Server& Server::operator=(Server const &copy)
         this->_pass = copy._pass;
         this->_port = copy._port;
         this->_signalRecieved = copy._signalRecieved;
-        this->_listeningSocket = copy._listeningSocket; 
-        this->_fds = copy._fds; 
+        this->_listeningSocket = copy._listeningSocket;
+        this->_fds = copy._fds;
         this->_clients = copy._clients;
         //this->_channels = copy._channels;
     }
@@ -39,7 +39,7 @@ Server::~Server()
     for(size_t i = 0; i < _clients.size(); i++)
         std::cout << YELLOW << "Client <" << _clients[i].get_fd()  << "> Disconnected" << RESET << std::endl; //ver si tengo que hacer un getter del fd para el client
 
-    for (size_t i = 0; i < _fds.size(); i++) //incluye el _listeningSocket 
+    for (size_t i = 0; i < _fds.size(); i++) //incluye el _listeningSocket
         close(_fds[i].fd);
 
     //necesito hacer algo especifico de remove channel?
@@ -73,15 +73,15 @@ void Server::init()
     this->_listeningSocket = socket(AF_INET, SOCK_STREAM, 0); //Crea un nuevo socket (fd) que usa la direccion IPv4 y el protocolo TCP (enviar/recibir datos de manera confiable)
     if (_listeningSocket < 0)
         throw(std::runtime_error("Failed to create socket"));
-    
-    int enable = 1; //1 = true   
+
+    int enable = 1; //1 = true
     if (setsockopt(_listeningSocket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) < 0)
         throw(std::runtime_error("Failed to set SO_REUSEADDR on listening socket"));
 
     if (fcntl(_listeningSocket, F_SETFL, O_NONBLOCK) < 0) // si llamas a accept() y no hay conexiones esperando, en vez de quedarse esperando, retorna error.
         throw(std::runtime_error("Failed to set non-blocking mode on listening socket"));
 
-    //al crear un socket se necesita crear un nuevo elemento de la estructura sockaddr_in para indicar a qué dirección IP y puerto se debe “atar” ese socket 
+    //al crear un socket se necesita crear un nuevo elemento de la estructura sockaddr_in para indicar a qué dirección IP y puerto se debe “atar” ese socket
     //solo en estos casos, definimos tambien los elementos de addr, necesarios para usar 'bind' (en el caso de clientes nuevos omitimos esto)
     //Esta estructura es la manera que el sistema operativo usa para representar direcciones de red IPv4 en C/C++
     struct sockaddr_in addr;
@@ -102,7 +102,7 @@ void Server::init()
     listenPollFd.fd = this->_listeningSocket; //el socket que debe vigilar: el listening socket
     listenPollFd.events = POLLIN; //eventos que te interesan: cuando hay nuevas conexiones pendientes
     listenPollFd.revents = 0; // eventos que ocurrieron: se inicializa a cero.
-    
+
     _fds.push_back(listenPollFd); //añades este descriptor a tu vector _fds
 }
 
@@ -111,7 +111,7 @@ void Server::init()
  * Cuando poll() retorna, revisas el campo 'revents' de cada pollfd para saber qué sockets están “listos” para operar:
         - Si es el listening socket con POLLIN, hay un cliente nuevo que quiere conectar.
         - Si es un socket cliente con POLLIN, ese cliente envió datos que puedes leer.
-*/    
+*/
 void Server::execute()
 {
     while (_signalRecieved == false)
@@ -156,7 +156,7 @@ Cuando lees todo (el buffer interno queda vacío),
     * Accepts a new incoming connection from the listening socket and prepares it to be handled by the server (accept)
     * Configura el socket que no bloquee el programa (fcntl)
     * Creates and configures a new node of the pollfd struct to add it to _fds, therefore _fds can monitor this new client (pollfd newClientPollFd)
-    
+
     accept --> Extracts the first pending connection from the listening socket's queue and returns a new socket file descriptor connected to the client.
     fcntl --> Sets the newly accepted client socket to non-blocking mode so that read/write operations will not block the server loop.
 */
@@ -183,9 +183,9 @@ void Server::NewClient()
     //3. new client node to add to the _clients vector
     Client newClient;
     newClient.set_fd(clientSocket);
-	newClient.set_IPaddress(inet_ntoa((clientAddr.sin_addr))); //inet_ntoa --> convierte la dirección IPv4 binaria (in_addr) en una cadena legible 
+	newClient.set_IPaddress(inet_ntoa((clientAddr.sin_addr))); //inet_ntoa --> convierte la dirección IPv4 binaria (in_addr) en una cadena legible
     _clients.push_back(newClient);
-    
+
     std::cout << YELLOW << "Client connected: fd " << clientSocket << RESET << std::endl;
 }
 
@@ -203,7 +203,7 @@ void Server::NewData(int clientFd)
     char buffer[1024];
     memset(buffer, 0, sizeof(buffer));  // Buena práctica: limpiar buffer TEMPORAL
     size_t bytesReceived = recv(clientFd, buffer, sizeof(buffer) - 1, 0);
-    
+
     if (bytesReceived <= 0) // el cliente cerró o hubo error
     {
         std::cerr << RED << "Connection closed or error on client's fd " << clientFd << RESET << std::endl; //NO USAMOS THROW porque el servidor debería seguir funcionando para otros clientes.
@@ -214,18 +214,18 @@ void Server::NewData(int clientFd)
     buffer[bytesReceived] = '\0';
 
     Client* currentClient = this->get_client(clientFd); // Devuelve puntero al cliente encontrado
-    if (!currentClient) 
-        throw std::runtime_error("error client doesn't exist"); 
+    if (!currentClient)
+        throw std::runtime_error("error client doesn't exist");
 
     // Acumular los datos recibidos en el buffer privado del cliente, NO sobrescribir
     currentClient->set_buffer(buffer); //usamos '->' porque es un puntero
-        
+
     std::string& accumulatedBuffer = currentClient->get_buffer();
 
     // Revisar si el buffer acumulado contiene uno o más comandos completos terminados en \r\n
     if (accumulatedBuffer.find("\r\n") == std::string::npos)
         return; //si NO encuentra, vuelve a poll() para esperar más datos, no es el fin del comando IRC (todo el resto no se ejecuta, no se limpia el buffer del cliente)
-     
+
     // Separar todos los comandos completos en el buffer acumulado
     std::vector<std::string> commands = split_receivedBuffer(accumulatedBuffer);
     currentClient->set_cmd(commands); //cada comando siempre esta delimitado por \r\n
@@ -245,8 +245,8 @@ void Server::parser(std::string &cmd, int fd)
         return;
 
     std::vector<std::string> commands = split_cmd(cmd);
-    
-    //normalize letters from command token to capital letters 
+
+    //normalize letters from command token to capital letters
     for (size_t i = 0; i < commands[0].size(); i++)
         commands[0][i] = toupper(commands[0][i]);
 
@@ -294,10 +294,10 @@ std::vector<std::string> Server::split_receivedBuffer(std::string buffer) //no n
     size_t end;
 
     // Buscar mientras haya "\r\n"
-    while ((end = buffer.find("\r\n", start)) != std::string::npos) 
+    while ((end = buffer.find("\r\n", start)) != std::string::npos)
     {
         line = trim(buffer.substr(start, end - start));
-        if (!line.empty()) 
+        if (!line.empty())
             commands.push_back(line); // Guardar el comando
         start = end + 2; // Saltar "\r\n"
     }
@@ -307,7 +307,7 @@ std::vector<std::string> Server::split_receivedBuffer(std::string buffer) //no n
 //Getters
 Client* Server::get_client(int fd) //con esta funcion accedemos al puntero cliente
 {
-    for (size_t i = 0; i < _clients.size(); i++) 
+    for (size_t i = 0; i < _clients.size(); i++)
     {
         if (_clients[i].get_fd() == fd) {
             return &_clients[i]; // Devuelve puntero al cliente encontrado
@@ -320,10 +320,86 @@ Client* Server::get_client(int fd) //con esta funcion accedemos al puntero clien
 
 /*
 
-_clients[i].get_fd() 
+_clients[i].get_fd()
 
-_clients es un vector de clientes que esta dentro de eserver, en la posicion [i] hace referencia a un nodo especifico de la clase Client. 
+_clients es un vector de clientes que esta dentro de eserver, en la posicion [i] hace referencia a un nodo especifico de la clase Client.
 para acceder a ingotmacion de ese nodo especifico tenemos que usar un getter porque es otra clase
 
 */
 
+
+
+/*
+// Agregar en Server.hpp estas dos lineas al privado (linea 42?):
+  std::map<std::string, CommandHandler> _registrationCommands;
+  std::map<std::string, CommandHandler> _channelCommands;
+
+   En Server.cpp constructor:
+  Server::Server(int port, std::string pass)
+  {
+      this->_pass = pass;
+      this->_port = port;
+      this->_signalRecieved = false;
+      this->_listeningSocket = -1;
+
+      // Inicializar mapa de comandos
+      _registrationCommands["NICK"] = &Server::NICK;
+      _registrationCommands["USER"] = &Server::USER;
+      _registrationCommands["PASS"] = &Server::PASS;
+      _registrationCommands["QUIT"] = &Server::QUIT;
+
+      _channelCommands["JOIN"] = &Server::JOIN;
+      _channelCommands["PRIVMSG"] = &Server::PRIVMSG;
+      _channelCommands["KICK"] = &Server::KICK;
+      _channelCommands["INVITE"] = &Server::INVITE;
+      _channelCommands["TOPIC"] = &Server::TOPIC;
+      _channelCommands["MODE"] = &Server::MODE;
+      _channelCommands["PART"] = &Server::PART;
+  }
+
+  Reemplazar en la funcion Parser (linea 241):
+  void Server::parser(std::string &cmd, int fd)
+  {
+      cmd = trim(cmd);
+      if(cmd.empty())
+          return;
+
+      std::vector<std::string> commands = split_cmd(cmd);
+
+      // Normalize command to uppercase
+      for (size_t i = 0; i < commands[0].size(); i++)
+          commands[0][i] = toupper(commands[0][i]);
+
+      std::string cmdName = commands[0];
+
+      // Chequear registro de commands
+      if (_registrationCommands.find(cmdName) != _registrationCommands.end()) {
+          CommandHandler handler = _registrationCommands[cmdName];
+          (this->*handler)(cmd, fd);
+          return;
+      }
+
+      // Chequear si el usuario esta registrado para los comandos de channel
+      if (isregistered(fd)) {
+          if (_channelCommands.find(cmdName) != _channelCommands.end()) {
+              CommandHandler handler = _channelCommands[cmdName];
+              (this->*handler)(cmd, fd);
+          } else {
+              _sendResponse(ERROR_COMMAND_NOT_RECOGNIZED(get_client(fd)->get_nickname(),
+  cmdName), fd);
+          }
+      } else {
+          _sendResponse(ERROR_NOT_REGISTERED_YET(std::string("*")), fd);
+      }
+  }
+
+  	1.	Agregar nuevos comandos es más fácil:
+	•	ANTES: Actualizar el array + cambiar el contador hard-coded + recompilar
+	•	DESPUÉS: Solo añadir una línea en el constructor: _channelCommands["NEWCMD"] = &Server::NEWCMD;
+
+    2.	No más tamaños de arrays hard-coded: No es necesario recordar actualizar i < 4 o i < 7.
+	3.	Búsqueda más rápida: std::map es O(log n), tu bucle actual es O(n).
+	4.	Mejor organización: Separación clara entre los comandos de registro y los de canal.
+	5.	Menos propenso a errores: Sin riesgo de olvidar actualizar los tamaños de los arrays.
+
+*/

@@ -1,49 +1,8 @@
-#include "../INC/Server.hpp"
+#include "../../includes/core/Server.hpp"
+#include "../../includes/commands/ChannelCommands.hpp"
 
-/*
-1. Basic Functionality
 
-  - Remove user from specified channel(s)
-  - Send departure notification to remaining channel members
-  - Send confirmation to the departing user
 
-  2. Command Syntax
-
-  - PART #channel - PART single channel
-  - PART #chan1,#chan2 - PART multiple channels
-  - PART #channel :Goodbye everyone! - PART with custom
-  message
-  - PART #chan1,#chan2 :See you later - PART multiple with
-  message
-
-3. Validation Requirements
-
-  - User must be registered (same as JOIN)
-  - Channel(s) must exist
-  - User must actually be IN the channel(s) to PART
-  - Handle invalid channel names
-
-  4. IRC Protocol Responses
-
-  - Send PART message to all channel members (including
-  PARTr)
-  - Format: :nick!user@host PART #channel :reason
-  - If channel becomes empty after user PARTs, what
-  happens?
-
-  5. Edge Cases to Handle
-
-  - What if user isn't in the channel?
-  - What if channel doesn't exist?
-  - What if user is the last person in channel?
-  - Multiple channels with some valid, some invalid?
-*/
-
-/*
-
-  3. Parse and validate parameters
-  4. Process the channels
-*/
 
 std::vector<std::string> Server::SplitPART(std::string command)
 {

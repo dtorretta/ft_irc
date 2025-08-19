@@ -6,23 +6,26 @@
 /*    Messages    */
 /******************/
 #define MSG_WELCOME(nickname) (": 001 " + nickname + " : Connected to IRC network successfully!" + CRLF)
-#define MSG_USERMODE(hostname, channelname, mode, user)  ":" + hostname + " MODE " + channelname + " " + mode + " " + user + CRLF
-#define MSG_CREATION_TIME(nickname, channelname, creationtime) ": 329 " + nickname + " #" + channelname + " " + creationtime + CRLF
-#define MSG_CHANNEL_MODES(nickname, channelname, modes) ": 324 " + nickname + " #" + channelname + " " + modes + CRLF
+#define MSG_USERMODE(hostname, channelname, mode, user)  (":" + hostname + " MODE " + channelname + " " + mode + " " + user + CRLF)
+#define MSG_CREATION_TIME(nickname, channelname, creationtime) (": 329 " + nickname + " #" + channelname + " " + creationtime + CRLF)
+#define MSG_CHANNEL_MODES(nickname, channelname, modes) (": 324 " + nickname + " #" + channelname + " " + modes + CRLF)
 #define MSG_MODE_CHANGE(hostname, channelname, mode, arguments) (":" + hostname + " MODE #" + channelname + " " + mode + " " + arguments + CRLF)
 #define MSG_NICK_UPDATE(oldnickname, nickname) (":" + oldnickname + " NICK " + nickname + CRLF)
 #define MSG_USER_JOIN(hostname, ipaddress, channelname) (":" + hostname + "@" + ipaddress + " JOIN " + channelname + CRLF)
 #define MSG_NAMES_LIST(nickname, channelname, clientslist) (": 353 " + nickname + " @ " + channelname + " :" + clientslist + CRLF)
 #define MSG_NAMES_END(nickname, channelname) (": 366 " + nickname + " " + channelname + " :End of /NAMES list" + CRLF)
-#define MSG_CHANNEL_TOPIC(nickname, channelname, topic) (": 332 " + nickname + " " +channelname + " :" + topic + "\r\n")
+#define MSG_CHANNEL_TOPIC(nickname, channelname, topic) (": 332 " + nickname + " #" + channelname + " :" + topic + CRLF)
+#define MSG_USER_PART(nickname, user, ipaddress, channelname, reason) (":" + nickname + "!~" + user + "@localhost PART " + channelname + " :" + reason + CRLF)
+#define MSG_PRIVMSG_USER(nickname, user, target, message) (":" + nickname + "!~" + user + " PRIVMSG " + target + " :" + message + CRLF)
+#define MSG_PRIVMSG_CHANNEL(nickname, user, target, message) (":" + nickname + "!~" + user + "@localhost PRIVMSG " + target + " :" + message + CRLF)
 
 /****************/
 /*    Errors    */
 /****************/
 #define ERROR_MODE_PARAM_REQUIRED(channelname, mode) (": 696 #" + channelname + " * Parameter required for mode. " + mode + CRLF)
-#define ERROR_INVALID_MODE_PARAM(channelname, mode) ": 696 #" + channelname + " Invalid parameter for mode. " + mode + CRLF
-#define ERROR_KEY_ALREADY_SET(channelname) ": 467 #" + channelname + " Channel key is already configured. " + CRLF
-#define ERROR_UNRECOGNIZED_MODE(nickname, channelname, mode) ": 472 " + nickname + " #" + channelname + " " + mode + " :is an unknown channel mode" + CRLF
+#define ERROR_INVALID_MODE_PARAM(channelname, mode) (": 696 #" + channelname + " Invalid parameter for mode. " + mode + CRLF)
+#define ERROR_KEY_ALREADY_SET(channelname) (": 467 #" + channelname + " Channel key is already configured. " + CRLF)
+#define ERROR_UNRECOGNIZED_MODE(nickname, channelname, mode) (": 472 " + nickname + " #" + channelname + " " + mode + " :is an unknown channel mode" + CRLF)
 #define ERROR_INSUFFICIENT_PARAMS(nickname) (": 461 " + nickname + " :Insufficient parameters provided." + CRLF)
 #define ERROR_CHANNEL_NOT_EXISTS(nickname, channelname) (": 403 " + nickname + " " + channelname + " :Channel does not exist" + CRLF)
 #define ERROR_NOT_CHANNEL_OP(channelname) (": 482 #" + channelname + " :You are not a channel operator" + CRLF)
@@ -39,6 +42,10 @@
 #define ERROR_WRONG_KEY(nickname, channelname) (" : 475 " + nickname + " #" + channelname + " :Incorrect password for channel" + CRLF)
 #define ERROR_INVITE_ONLY(nick, chan) (": 473 " + nick + " " + chan + " :Cannot join channel (+i)" + CRLF)
 #define ERROR_CHANNEL_FULL(nick, chan) (": 471 " + nick + " " + chan + " :Cannot join channel (+l)" + CRLF)
+#define ERROR_NOT_IN_CHANNEL(nick, chan) (": 442 " + nick + " " + chan + " :You are not in this channel" + CRLF)
+#define ERROR_NO_TEXT_TO_SEND(nick) (": 412 " + nick + " :No text to send" + CRLF)
+#define ERROR_NO_RECIPIENT(nickname) (": 411 " + nickname + " :No recipient given (PRIVMSG)" + CRLF)
+
 
 
 /*
