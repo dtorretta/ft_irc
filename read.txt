@@ -25,7 +25,7 @@ EJEMPLO de comandos basicos:
         Tu servidor debe:
             - Verificar que el nick no esté en uso.
             - Guardar ese nick en la sesión del cliente.
-            - Si está en uso, responder con un error:   
+            - Si está en uso, responder con un error:
                 :server 433 * juan :Nickname is already in use
 
 📌 USER Dany :Daniela Torretta     --> Registra información del usuario.
@@ -63,7 +63,7 @@ Tu servidor IRC debe:
 - Reenviar mensajes a otros clientes cuando sea necesario (por ejemplo, un PRIVMSG a todos en el canal).
 
 PARSER
-🛠 cómo parsear un mensaje IRC 
+🛠 cómo parsear un mensaje IRC
 [:prefijo] COMANDO [params] ... [:trailing]    --> formato base
 
 Ejemplo simple
@@ -87,22 +87,22 @@ cositas del subjet:
 
 1)  No se espera que crees un programa para que el usuario chatee.
     Vas a probar tu servidor usando clientes reales ya existentes (ej: irssi, Weechat, HexChat).
-    
+
 2)  En IRC real, los servidores pueden conectarse entre sí para formar redes.
     Acá solo implementás un servidor que maneja conexiones directas con clientes. Nada de enlazar con otro servidor.
 
 3)  si un cliente se queda sin enviar nada, tu servidor no debe quedarse esperando indefinidamente y dejar colgados a los demás.
 
 4)  No podés usar fork() para crear un proceso por cliente
-    En cambio, vas a usar un único proceso y todos los sockets van a estar en modo no bloqueante 
+    En cambio, vas a usar un único proceso y todos los sockets van a estar en modo no bloqueante
     (fcntl(fd, F_SETFL, O_NONBLOCK) por ejemplo).                --->> KHEEEEEEEEE
-    “No bloqueante” significa que funciones como recv() o send() no se quedan esperando si no hay datos. 
+    “No bloqueante” significa que funciones como recv() o send() no se quedan esperando si no hay datos.
     Si no hay nada que leer/escribir, devuelven inmediatamente.
-    
+
 5)  Tenés que manejar todas las operaciones con un único llamado a poll() (o select(), epoll(), kqueue() si preferís).
     Esto incluye:
         - Aceptar nuevas conexiones (listen() / accept()).
-        - Leer datos (recv()).  
+        - Leer datos (recv()).
         - Enviar datos (send()).
     O sea, todo pasa por el mismo bucle de eventos que revisa qué sockets están listos para operar.
     SIEMPRE que hagamos read/recv o write/send tenemos que verificar antes con un poll() si hay datos para leer/escribir
@@ -113,10 +113,10 @@ cositas del subjet:
 💡 En resumen:
 Vas a tener un único bucle principal más o menos así:
 
-while (true) 
+while (true)
 {
     poll(fds, nfds, timeout); // espera hasta que haya algo listo
-    for (cada fd listo) 
+    for (cada fd listo)
     {
         if (fd == listening_socket) accept();
         else if (fd listo para lectura) recv();
@@ -127,7 +127,7 @@ while (true)
 1️⃣ ¿Qué es poll()?
 poll() es una syscall que revisa un conjunto de file descriptors y te dice cuáles están listos
     “Avisame cuando alguno de estos file descriptors esté listo para hacer algo (leer, escribir, o me avise de un error)”.
-    
+
 en poll el fds es un array de fds que contiene:
 - El socket que escucha conexiones nuevas (listening_socket). --> para saber cuándo llega un nuevo cliente
 - Todos los sockets de clientes conectados. --> los sockets nuevos creados por accept()
@@ -135,10 +135,10 @@ en poll el fds es un array de fds que contiene:
 
 Un socket es simplemente un canal de comunicación entre dos programas (cliente y servidor)
 
-Los sockets permiten: comunicacion en tiempo real entre servidor y cliente, de esta forma, ante cuando nueva actualizacion, 
+Los sockets permiten: comunicacion en tiempo real entre servidor y cliente, de esta forma, ante cuando nueva actualizacion,
 el server puede enviar una notificacion y comunicar al cliente
 
-Antes de los sockets (o sin ellos), para que un cliente “se entere” si hay algo nuevo en el servidor, 
+Antes de los sockets (o sin ellos), para que un cliente “se entere” si hay algo nuevo en el servidor,
 normalmente hacía peticiones periódicas (polling): preguntaba cada X segundos si había novedades.
 
 En el sistema operativo, cada socket está representado por un descriptor de archivo (FD)
@@ -151,3 +151,20 @@ En el sistema operativo, cada socket está representado por un descriptor de arc
     Este nuevo socket es el que usas para leer y escribir datos con ese cliente.
 3. ¿Qué pasa con el listening socket después de accept()?
     - El listening socket sigue existiendo y sigue escuchando para futuras conexiones entrantes.
+
+Para evaluacion:
+1. netcat (nc) - BEST for evaluation
+
+  nc localhost 6667
+  Why it's perfect:
+  - ✅ Shows raw IRC protocol - evaluators see exactly what your server sends/receives
+  - ✅ No client-side filtering - you see every response your server generates
+  - ✅ Simple and direct - no GUI complications
+  - ✅ Available everywhere - works on all systems
+  - ✅ Transparent - evaluators can see the actual IRC messages
+
+    Use netcat for evaluation because:
+  1. Evaluators can see your JOIN message format: :alice!alice@127.0.0.1 JOIN #test
+  2. They see your error handling: : 403 bob #nonexistent :Channel does not exist
+  3. Shows your PART implementation: :bob!~bob@localhost PART #test :reason
+  4. Demonstrates raw IRC protocol compliance

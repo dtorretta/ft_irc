@@ -1,5 +1,6 @@
-#include "../includes/Server.hpp"
-#include "../includes/Channel.hpp"
+#include "../INC/Server.hpp"
+#include "../INC/Channel.hpp"
+
 
 std::vector<std::pair<std::string, std::string> > Server::SplitJOIN(std::string cmd)
 {
@@ -173,4 +174,7 @@ void	Server::JOIN(std::string cmd, int fd)
 		else
 			Channel_Not_Exist(channel_name, client, fd);
 	}
+
+
 }
+

@@ -60,8 +60,8 @@ class Server
 		/*    Commands    */
 		/******************/
 		//JOIN
-		void	Join(std::string cmd, int fd);
-		std::vector<std::pair<std::string, std::string> > SplitJoin(std::string cmd); //NEW!!!
+		void	JOIN(std::string cmd, int fd);
+		std::vector<std::pair<std::string, std::string> > SplitJOIN(std::string cmd); //NEW!!!
 		void	Channel_Exist(Channel *channel, Client *client, int fd, std::string key, std::string name); //NEW!!!
 		void	Channel_Not_Exist(std::string channel_name, Client *client, int fd); //NEW!!!
 
