@@ -1,5 +1,6 @@
 #include "../../includes/core/Server.hpp"
 
+
 Server::Server(int port, std::string pass)
 {
     this->_pass = pass;

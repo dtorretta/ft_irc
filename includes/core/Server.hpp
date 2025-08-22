@@ -54,8 +54,8 @@ class Server
 		/******************/
 		/*     Getters    */
 		/******************/
-		Client* get_client(int fd);
-		Channel* get_channelByName(const std::string& name);
+		Client* get_client(int fd) const;
+		Channel* get_channelByName(const std::string& name) const;
 
 		/******************/
 		/*      Utils     */

@@ -18,32 +18,38 @@ class Client
         // NO LAS DESCARTE, SOLO NO LLEGUE A IMPLEMENTARLAS
         //bool isOperator;
         //bool registered;
-        //bool logedin;
+
 
     public:
         Client(); // Constructor
         ~Client(); // Destructor
-        //copy y operaator = //todoooo
+        //copy y operaator = //todoooo ⚠️
 
-        //Getters
-        std::string get_username();  //old name: GetUserName
-        std::string get_nickname();  //old name: GetNickName
-        std::string get_hostname();
-        std::string get_IPaddress();
-        int get_fd();  //old name: GetFd
-        std::string& get_buffer();   //old name: getBuffer          //& porque no queremos que devuelva una copia sino un pointer
-        std::vector<std::string>& get_cmd();  //old name: nueva          //devuelve un pointer
-        std::vector<std::string>& get_channels();  //devuelve un pointer
-        bool get_logedIn(); 
+		/******************/
+		/*     Getters    */
+		/******************/
+        std::string get_username() const;  //old name: GetUserName
+        std::string get_nickname() const;  //old name: GetNickName
+        std::string get_hostname() const;
+        std::string get_IPaddress() const;
+        int get_fd() const;  //old name: GetFd
+        const std::string& get_buffer() const;   //old name: getBuffer          //& porque no queremos que devuelva una copia sino un pointer
+        const std::vector<std::string>& get_cmd() const;  //old name: nueva          //devuelve un pointer
+        const std::vector<std::string>& get_channels() const;  //devuelve un pointer
+        bool get_logedIn() const; 
 
-        //setters
+        /******************/
+		/*     Setters    */
+		/******************/
         void set_nickname(std::string nickname);  
         void set_IPaddress(const std::string& address); //old name: setIpAdd
         void set_fd(int fd); //old name: SetFd
         void set_buffer(const std::string& chunk); //old name: SetFd
         void set_cmd(const std::vector<std::string>& cmds); //old name: nueva
 
-        //utils
+        /******************/
+		/*      Utils     */
+		/******************/
         void clearBuffer();
 
 };

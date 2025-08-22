@@ -22,23 +22,23 @@ void Client::set_buffer(const std::string& chunk){_buffer += chunk;} //_buffer =
 void Client::set_cmd(const std::vector<std::string>& cmds){_cmd = cmds;}
 
 //getters
-std::string Client::get_username(){return _username;}
+std::string Client::get_username() const {return _username;}
 
-std::string Client::get_nickname(){return _nickname;}
+std::string Client::get_nickname() const {return _nickname;}
 
-std::string Client::get_IPaddress(){return _IPaddress;}
+std::string Client::get_IPaddress() const {return _IPaddress;}
 
-int Client::get_fd(){return _fd;}
+int Client::get_fd() const {return _fd;}
 
-std::string& Client::get_buffer(){return _buffer;}
+const std::string& Client::get_buffer() const {return _buffer;}
 
-std::vector<std::string>& Client::get_cmd(){return _cmd;}
+const std::vector<std::string>& Client::get_cmd() const {return _cmd;}
 
-std::vector<std::string>& Client::get_channels(){return _channels;}
+const std::vector<std::string>& Client::get_channels() const {return _channels;}
 
-bool Client::get_logedIn(){return this->_logedin;}
+bool Client::get_logedIn() const {return this->_logedin;}
 
-std::string Client::get_hostname()
+std::string Client::get_hostname() const 
 {
 	std::string hostname = this->get_nickname() + "!" + this->get_username();
 	return hostname;
