@@ -2,10 +2,24 @@
 
 Server::Server(int port, std::string pass)
 {
-        this->_pass = pass;
-        this->_port = port;
-        this->_signalRecieved = false;
-        this->_listeningSocket = -1;
+    this->_pass = pass;
+    this->_port = port;
+    this->_signalRecieved = false;
+    this->_listeningSocket = -1;
+
+    // Inicializar mapa de comandos
+    _registrationCommands["NICK"] = &Server::NICK;
+    _registrationCommands["USER"] = &Server::USER;
+    _registrationCommands["PASS"] = &Server::PASS;
+    _registrationCommands["QUIT"] = &Server::QUIT;
+
+    _channelCommands["JOIN"] = &Server::JOIN;
+    _channelCommands["PRIVMSG"] = &Server::PRIVMSG;
+    _channelCommands["KICK"] = &Server::KICK;
+    _channelCommands["INVITE"] = &Server::INVITE;
+    _channelCommands["TOPIC"] = &Server::TOPIC;
+    _channelCommands["MODE"] = &Server::MODE;
+    _channelCommands["PART"] = &Server::PART;
 }
 
 Server::Server(Server const &copy)
@@ -16,7 +30,7 @@ Server::Server(Server const &copy)
     this->_listeningSocket = copy._listeningSocket;
     this->_fds = copy._fds;
     this->_clients = copy._clients;
-    //this->_channels = copy._channels;
+    //this->_channels = copy._channels; //🚨 quitar comment out
 }
 
 Server& Server::operator=(Server const &copy)
@@ -29,7 +43,7 @@ Server& Server::operator=(Server const &copy)
         this->_listeningSocket = copy._listeningSocket;
         this->_fds = copy._fds;
         this->_clients = copy._clients;
-        //this->_channels = copy._channels;
+        //this->_channels = copy._channels; //🚨 quitar comment out
     }
     return(*this);
 }
@@ -44,7 +58,7 @@ Server::~Server()
 
     //necesito hacer algo especifico de remove channel?
 
-    _channels.clear();
+    //_channels.clear(); //🚨 quitar comment out
     _clients.clear(); //esto me ahorra de hacer un remove elemento por elemento
     _fds.clear(); //esto me ahorra de hacer un remove elemento por elemento
     this->_listeningSocket = -1;
@@ -64,12 +78,9 @@ Server::~Server()
     bind --> It associets the socket with the IP adress and port setted in the struct addr
     listen --> Pone el socket en modo escucha para conexiones entrantes.
 */
+
 void Server::init()
 {
-    // this->_pass = pass;
-    // this->_port = port;
-    // this->_signalRecieved = false;
-
     this->_listeningSocket = socket(AF_INET, SOCK_STREAM, 0); //Crea un nuevo socket (fd) que usa la direccion IPv4 y el protocolo TCP (enviar/recibir datos de manera confiable)
     if (_listeningSocket < 0)
         throw(std::runtime_error("Failed to create socket"));
@@ -112,12 +123,18 @@ void Server::init()
         - Si es el listening socket con POLLIN, hay un cliente nuevo que quiere conectar.
         - Si es un socket cliente con POLLIN, ese cliente envió datos que puedes leer.
 */
+
 void Server::execute()
 {
     while (_signalRecieved == false)
     {
         if((poll(&_fds[0], _fds.size(), -1) < 0) && _signalRecieved == false) //timeout = -1 espera indefinidamente
             throw(std::runtime_error("poll failed"));
+            
+        //check signal
+        if(_signalRecieved)
+            break;
+            
         for(size_t i = 0; i < _fds.size(); i++)
         {
             if(_fds[i].revents && POLLIN)
@@ -130,6 +147,7 @@ void Server::execute()
         }
     }
 }
+
 /*
 Cuando recv() no leyó todo el mensaje porque el buffer es limitado (ejemplo 1024 bytes) y quedaron datos sin leer, esos datos ya están en el buffer interno del sistema operativo (SO) para esa conexión TCP.
 
@@ -160,6 +178,7 @@ Cuando lees todo (el buffer interno queda vacío),
     accept --> Extracts the first pending connection from the listening socket's queue and returns a new socket file descriptor connected to the client.
     fcntl --> Sets the newly accepted client socket to non-blocking mode so that read/write operations will not block the server loop.
 */
+
 void Server::NewClient()
 {
     //al crear un cliente se necesita crear un nuevo elemento de la estructura sockaddr_in para indicar a dónde debe enviar datos.
@@ -198,6 +217,7 @@ void Server::NewClient()
     -Si hubo error → manejarlo igual que un cierre.
     -Si hay datos recibidos → procesarlos (por ahora, imprimirlos o guardarlos).
 */
+
 void Server::NewData(int clientFd)
 {
     char buffer[1024];
@@ -208,7 +228,7 @@ void Server::NewData(int clientFd)
     {
         std::cerr << RED << "Connection closed or error on client's fd " << clientFd << RESET << std::endl; //NO USAMOS THROW porque el servidor debería seguir funcionando para otros clientes.
         ft_close(clientFd); // RemoveClient, RemoveFds, close(fd)
-        // RmChannels(fd); //⚠️ TO DO!!
+        // RmChannels(fd); //⚠️ TO DO!! //🚨 quitar comment out
         return;
     }
     buffer[bytesReceived] = '\0';
@@ -239,7 +259,7 @@ void Server::NewData(int clientFd)
 }
 
 void Server::parser(std::string &cmd, int fd)
-{
+{   
     cmd = trim(cmd);
     if(cmd.empty())
         return;
@@ -250,38 +270,29 @@ void Server::parser(std::string &cmd, int fd)
     for (size_t i = 0; i < commands[0].size(); i++)
         commands[0][i] = toupper(commands[0][i]);
 
-    static CommandMap handleCommands []= {
-	{"NICK", &Server::NICK}, //⚠️ TO DO!!
-	{"USER", &Server::USER}, //⚠️ TO DO!!
-	{"PASS", &Server::PASS}, //⚠️ TO DO!!
-	{"QUIT", &Server::QUIT},
-	};
+    std::string cmdName = commands[0];
+    // Chequear registro de commands
+    std::map<std::string, CommandHandler>::iterator it = _registrationCommands.find(cmdName);
+    if (it != _registrationCommands.end()) 
+    {
+        CommandHandler handler = it->second;
+        (this->*handler)(cmd, fd);
+        return;
+    }
 
-    for (int i = 0; i < 4; i++)
-	{
-		if(!commands.empty() && commands[0] == handleCommands[i]._name)
-            this->handleCommands[i]._handler(cmd, fd);
-	}
-
-    static CommandMap handleCommands2 []= {
-	{"JOIN", &Server::JOIN},
-	{"PRIVMSG", &Server::PRIVMSG},
-	{"KICK", &Server::KICK},
-	{"INVITE", &Server::INVITE},
-    {"TOPIC", &Server::TOPIC},
-    {"MODE", &Server::MODE},
-    {"PART", &Server::PART},
-	};
-
-    if(isregistered(fd))
-        for (int i = 0; i < 7; i++)
+    // Chequear si el usuario esta registrado para los comandos de channel
+    if (isregistered(fd)) 
+    {
+        std::map<std::string, CommandHandler>::iterator it2 = _channelCommands.find(cmdName) 
+        if (it2 != _channelCommands.end()) 
         {
-            if(!commands.empty() && commands[0] == handleCommands2[i]._name)
-                this->handleCommands2[i]._handler(cmd, fd);
-            else
-                _sendResponse(ERROR_COMMAND_NOT_RECOGNIZED(get_client(fd)->get_nickname(), commands[0]), fd);
-        }
-    else
+            CommandHandler handler = it->second;
+            (this->*handler)(cmd, fd);
+        } 
+        else 
+            _sendResponse(ERROR_COMMAND_NOT_RECOGNIZED(get_client(fd)->get_nickname(), cmdName), fd);
+    } 
+    else 
         _sendResponse(ERROR_NOT_REGISTERED_YET(std::string("*")), fd);
 }
 
@@ -316,7 +327,15 @@ Client* Server::get_client(int fd) //con esta funcion accedemos al puntero clien
     return NULL; // No encontrado
 }
 
-
+Channel* Server::get_channelByName(const std::string& name)
+{
+    for (std::vector<Channel>::iterator it = _channels.begin(); it != _channels.end(); ++it)
+    {
+        if (it->getName() == name) // ver si cambiar el nombre!
+            return &(*it);
+    }
+    return NULL;
+}
 
 /*
 
@@ -329,77 +348,6 @@ para acceder a ingotmacion de ese nodo especifico tenemos que usar un getter por
 
 
 
-/*
-// Agregar en Server.hpp estas dos lineas al privado (linea 42?):
-  std::map<std::string, CommandHandler> _registrationCommands;
-  std::map<std::string, CommandHandler> _channelCommands;
 
-   En Server.cpp constructor:
-  Server::Server(int port, std::string pass)
-  {
-      this->_pass = pass;
-      this->_port = port;
-      this->_signalRecieved = false;
-      this->_listeningSocket = -1;
 
-      // Inicializar mapa de comandos
-      _registrationCommands["NICK"] = &Server::NICK;
-      _registrationCommands["USER"] = &Server::USER;
-      _registrationCommands["PASS"] = &Server::PASS;
-      _registrationCommands["QUIT"] = &Server::QUIT;
 
-      _channelCommands["JOIN"] = &Server::JOIN;
-      _channelCommands["PRIVMSG"] = &Server::PRIVMSG;
-      _channelCommands["KICK"] = &Server::KICK;
-      _channelCommands["INVITE"] = &Server::INVITE;
-      _channelCommands["TOPIC"] = &Server::TOPIC;
-      _channelCommands["MODE"] = &Server::MODE;
-      _channelCommands["PART"] = &Server::PART;
-  }
-
-  Reemplazar en la funcion Parser (linea 241):
-  void Server::parser(std::string &cmd, int fd)
-  {
-      cmd = trim(cmd);
-      if(cmd.empty())
-          return;
-
-      std::vector<std::string> commands = split_cmd(cmd);
-
-      // Normalize command to uppercase
-      for (size_t i = 0; i < commands[0].size(); i++)
-          commands[0][i] = toupper(commands[0][i]);
-
-      std::string cmdName = commands[0];
-
-      // Chequear registro de commands
-      if (_registrationCommands.find(cmdName) != _registrationCommands.end()) {
-          CommandHandler handler = _registrationCommands[cmdName];
-          (this->*handler)(cmd, fd);
-          return;
-      }
-
-      // Chequear si el usuario esta registrado para los comandos de channel
-      if (isregistered(fd)) {
-          if (_channelCommands.find(cmdName) != _channelCommands.end()) {
-              CommandHandler handler = _channelCommands[cmdName];
-              (this->*handler)(cmd, fd);
-          } else {
-              _sendResponse(ERROR_COMMAND_NOT_RECOGNIZED(get_client(fd)->get_nickname(),
-  cmdName), fd);
-          }
-      } else {
-          _sendResponse(ERROR_NOT_REGISTERED_YET(std::string("*")), fd);
-      }
-  }
-
-  	1.	Agregar nuevos comandos es más fácil:
-	•	ANTES: Actualizar el array + cambiar el contador hard-coded + recompilar
-	•	DESPUÉS: Solo añadir una línea en el constructor: _channelCommands["NEWCMD"] = &Server::NEWCMD;
-
-    2.	No más tamaños de arrays hard-coded: No es necesario recordar actualizar i < 4 o i < 7.
-	3.	Búsqueda más rápida: std::map es O(log n), tu bucle actual es O(n).
-	4.	Mejor organización: Separación clara entre los comandos de registro y los de canal.
-	5.	Menos propenso a errores: Sin riesgo de olvidar actualizar los tamaños de los arrays.
-
-*/

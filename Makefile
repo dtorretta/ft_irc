@@ -1,10 +1,20 @@
 NAME = ircserv
 
 SRC	=   sources/main.cpp \
-		sources/Client.cpp \
-		sources/Server.cpp
+		sources/core/Server.cpp \
+		sources/core/Client.cpp \
+		sources/utils/utils.cpp \
+		sources/commands/RegistrationCommands.cpp \
+		sources/commands/JoinCommand.cpp \
+		sources/commands/PartCommand.cpp \
+		sources/commands/PrivmsgCommand.cpp 
+#		sources/core/Channel.cpp \
 
-INC =   -I ./includes/
+INC =   -I ./includes/core \
+        -I ./includes/utils \
+		-I ./includes/commands \
+#		-I ./includes \
+       
    
 OBJS = $(SRC:%.cpp=%.o)
 

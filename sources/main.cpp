@@ -1,4 +1,6 @@
-#include "../includes/Server.hpp"
+#include "../includes/core/Server.hpp"
+
+bool Server::_signalRecieved = false; //incializamos la variable global estatica
 
 void printBanner()
 {
@@ -8,6 +10,7 @@ void printBanner()
                 << "╚════██║██╔══╝  ██╔══██╗╚██╗ ██╔╝██╔══╝  ██╔══██╗\n"
                 << "███████║███████╗██║  ██║ ╚████╔╝ ███████╗██║  ██║\n"
                 << "╚══════╝╚══════╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝"<< std::endl;
+    std::cout << "                -- initiated --\n\n";
 }
 
 /*
@@ -31,13 +34,18 @@ int main (int ac, char** av)
     }
     
     try
-    {
-        //⚠️ agregar signals
-        
+    { 
         if (!portValidation(av[1]) || std::string(av[2]).empty()) //es necesario limitar el largo de la pass?
             throw std::runtime_error("Error: Invalid Port or Password");
         
         printBanner();
+        
+        //Signals //lo importante es registrar las signals antes del loop principal
+        std::signal(SIGINT, Server::signalHandler); // Ctrl+C    //lo declaro aca, y dentro de la funcion signalHandler voy a marcar el flag en true
+        std::signal(SIGTERM, Server::signalHandler); //kill -TERM <pid> // pregunarle a migue si esta usando kill.
+        std::signal(SIGQUIT, SIG_IGN); //Ctrl+\   lo ignora
+        std::signal(SIGTSTP, SIG_IGN); //Ctrl+z   lo ignora
+
         Server newServer(std::atoi(av[1]), std::string(av[2]));
         newServer.init();
         
@@ -52,6 +60,6 @@ int main (int ac, char** av)
         //newServer.ft_close(-42); //a;adi los close y remove en el desructor
         return 1; //OPCIONAL PERO ES PARA TERMINAR CON UN ERROR (1)
     }  
-    std::cout << "Server Closed!" << std::endl;
+    std::cout << "\nServer Closed!" << std::endl;
     return 0;
 }

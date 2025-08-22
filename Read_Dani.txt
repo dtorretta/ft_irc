@@ -1,0 +1,32 @@
+1)
+necesito que en el header de channel agregues como metodo publico:
+
+void broadcast(const std::string& message, Client* exclude = nullptr);
+
+
+y en el .cpp de channel:
+
+void broadcast(const std::string& message, Client* exclude = nullptr)
+    {
+        for (std::vector<Client>::iterator it = clients.begin(); it != clients.end(); ++it)
+        {
+            if (&(*it) != exclude)
+                server->_sendResponse(message, it->get_fd());
+        }
+
+        for (std::vector<Client>::iterator it = admins.begin(); it != admins.end(); ++it)
+        {
+            if (&(*it) != exclude)
+                server->_sendResponse(message, it->get_fd());
+        }
+    }
+
+2)
+en en server.cpp estoy usando dentro de la funcion get_channelByName un metodo de channel
+std::string GetName();
+
+si le cambias el nombre, tambien habria que cambiarlo ahi (por ahora es la linea 334)
+
+3)
+en RegistrationCommands.cpp estoy usando la funcion GetClientInChannel que e sun un metodo de channel
+si le cambias el nombre, tambien habria que cambiarlo ahi (por ahora es la linea 66)

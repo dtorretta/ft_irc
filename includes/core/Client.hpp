@@ -10,9 +10,10 @@ class Client
         std::string _IPaddress; //old name: ipadd
         std::string _nickname; //old name: nickname
         std::string _username; //old name: username
-        std::vector<std::string> _channels; //old name: ChannelsInvite      //Lista de canales o grupos a los que pertenece el cliente (en un chat, por ejemplo).
         std::string _buffer; //old name: buffer
+        std::vector<std::string> _channels; //old name: ChannelsInvite      //Lista de canales o grupos a los que pertenece el cliente (en un chat, por ejemplo).
         std::vector<std::string> _cmd;
+        bool _logedin; //old name: logedin   //USER aca lo uso
 
         // NO LAS DESCARTE, SOLO NO LLEGUE A IMPLEMENTARLAS
         //bool isOperator;
@@ -22,6 +23,7 @@ class Client
     public:
         Client(); // Constructor
         ~Client(); // Destructor
+        //copy y operaator = //todoooo
 
         //Getters
         std::string get_username();  //old name: GetUserName
@@ -31,8 +33,11 @@ class Client
         int get_fd();  //old name: GetFd
         std::string& get_buffer();   //old name: getBuffer          //& porque no queremos que devuelva una copia sino un pointer
         std::vector<std::string>& get_cmd();  //old name: nueva          //devuelve un pointer
+        std::vector<std::string>& get_channels();  //devuelve un pointer
+        bool get_logedIn(); 
 
         //setters
+        void set_nickname(std::string nickname);  
         void set_IPaddress(const std::string& address); //old name: setIpAdd
         void set_fd(int fd); //old name: SetFd
         void set_buffer(const std::string& chunk); //old name: SetFd

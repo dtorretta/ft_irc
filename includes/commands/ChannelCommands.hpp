@@ -6,7 +6,7 @@
 
 // Forward declarations
 class Client;
-class Channel;
+//class Channel;
 class Server;
 
 /*******************/
@@ -22,7 +22,7 @@ class Server;
 	/***JOIN Command***/ \
 	void	JOIN(std::string cmd, int fd); \
 	std::vector<std::pair<std::string, std::string> > SplitJOIN(std::string cmd); \
-	void	Channel_Exist(Channel *channel, Client *client, int fd, std::string key, std::string name); \
+	/*void	Channel_Exist(Channel *channel, Client *client, int fd, std::string key, std::string name); \*/
 	void	Channel_Not_Exist(std::string channel_name, Client *client, int fd); \
 	/***PART Command***/ \
 	void	PART(std::string cmd, int fd); \
@@ -30,4 +30,4 @@ class Server;
 	/***PRIVMSG Command***/ \
 	void	PRIVMSG(std::string cmd, int fd); \
 	std::vector<std::string> SplitPM(std::string command);
-	/***TOPIC Command***/ \
+	/***TOPIC Command***/ 

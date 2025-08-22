@@ -180,3 +180,50 @@ Para evaluacion:
   2. They see your error handling: : 403 bob #nonexistent :Channel does not exist
   3. Shows your PART implementation: :bob!~bob@localhost PART #test :reason
   4. Demonstrates raw IRC protocol compliance
+
+
+
+
+
+
+mapeos:
+
+HEADER:
+public:
+typedef void (Server::*CommandHandler)(std::string, int);
+
+private:        
+std::map<KEY, VALUE> _NAME; 
+std::map<std::string, CommandHandler> _registrationCommands; 
+
+
+PRIMERO PUBLIC Y DESPUES PRIVATE
+
+
+INIT:
+_registrationCommands["NICK"] = &Server::NICK;
+
+EJECUCION:
+//1
+std::string cmdName = commands[0];   --> almacena el nombre de la primera key
+
+//2 --> definir el iterador donde find busca en el std::map si existe la key cmdName (ej: "NICK").
+std::map<KEY, VALUE>::iterator it = _NAME.find(cmdName);
+std::map<std::string, CommandHandler>::iterator it = _registrationCommands.find(cmdName);
+
+//3
+if (it != _registrationCommands.end()) 
+{
+    CommandHandler handler = it->second; //es lo mismo que poner _registrationCommands[cmdName]
+    (this->*handler)(cmd, fd);  //handler es simplemente el nombre
+    return;
+}
+
+
+-first = std::string --> KEY
+-second = CommandHandler --> VALUE
+
+'it->second' es lo mismo que hacer '_NAME[cmdName]' ya que map[key] devuelve una referencia al value asociado a esa key
+
+(this->*handler)
+handler es un puntero '*handler' a la funcion 'value / second' que esta declarada en la clase server por eso la llamados con 'this->'

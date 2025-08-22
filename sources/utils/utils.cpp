@@ -1,25 +1,32 @@
 #include "../../includes/core/Server.hpp"
 
+void Server::signalHandler(int sig)
+{
+    (void) sig;
+    _signalRecieved = true;
+}
+
 bool Server::isregistered(int fd)
 {
     if (!get_client(fd) ||
         get_client(fd)->get_nickname().empty() ||
         get_client(fd)->get_username().empty() ||
-        get_client(fd)->get_nickname() == "*" ||
-        !get_client(fd)->get_logedIn()) //⚠️ TO DO!!
+        get_client(fd)->get_nickname() == "*" /*||
+        !get_client(fd)->get_logedIn()*/) //⚠️ TO DO!!  //🚨 quitar comment out
         return false;
-	return true;
+	
+    return true;
 }
 
 void Server::_sendResponse(std::string response, int fd)
 {
 	if(send(fd, response.c_str(), response.size(), 0) == -1)
-		std::cerr << "Response send() faild" << std::endl;
+		std::cerr << "Response send() failed" << std::endl;
 }
 
 
 //quitar espacios al principio y al final
-std::string trim(const std::string &s) //tengo que incluirla en el header?? sino mandar a utils
+std::string Server::trim(const std::string &s) //tengo que incluirla en el header?? sino mandar a utils
 {
     size_t start = s.find_first_not_of(" \t\r\n");
     if (start == std::string::npos)
@@ -59,7 +66,7 @@ void Server::ft_close(int Fd)
 {
     RemoveClient(Fd); //si nunca los voy a llamar por fuera de esta funcion, puedo quitarlols del header y agregarlos a utils
     RemoveFd(Fd);  //si nunca los voy a llamar por fuera de esta funcion, puedo quitarlols del header y agregarlos a utils
-    RemoveChannel(Fd);
+    //RemoveChannel(Fd);
     close(Fd);
 }
 
@@ -114,14 +121,14 @@ void Server::RemoveFd(int Fd) //c++ style
     this->_listeningSocket = -1;
 }
 
-void Server::RemoveChannel(std::string &name)
-{
-    for (std::vector<Channel>::iterator it = _channels.begin(); it != _channels.end(); ++it)
-    {
-        if (it->GetName() == name)
-        {
-            _channels.erase(it);
-            return;
-        }
-    }
-}
+// void Server::RemoveChannel(std::string &name)
+// {
+//     for (std::vector<Channel>::iterator it = _channels.begin(); it != _channels.end(); ++it)
+//     {
+//         if (it->GetName() == name)
+//         {
+//             _channels.erase(it);
+//             return;
+//         }
+//     }
+// }

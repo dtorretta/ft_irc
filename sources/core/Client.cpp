@@ -5,12 +5,14 @@ Client::Client()
         this->_fd = -1;
         //this->bool isOperator = false;
         //this->bool registered = false;
-        //this->bool logedin = false;
+        this->_logedin = false;
 }
 
 Client::~Client(){}
 
 //setter
+void Client::set_nickname(std::string nickname){_nickname = nickname;}
+
 void Client::set_IPaddress(const std::string& address){_IPaddress = address;}
 
 void Client::set_fd(int fd){_fd = fd;}
@@ -32,11 +34,16 @@ std::string& Client::get_buffer(){return _buffer;}
 
 std::vector<std::string>& Client::get_cmd(){return _cmd;}
 
+std::vector<std::string>& Client::get_channels(){return _channels;}
+
+bool Client::get_logedIn(){return this->_logedin;}
+
 std::string Client::get_hostname()
 {
 	std::string hostname = this->get_nickname() + "!" + this->get_username();
 	return hostname;
 }
+
 
 
 /*
