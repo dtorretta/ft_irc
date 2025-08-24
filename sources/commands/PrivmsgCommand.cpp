@@ -1,5 +1,6 @@
 #include "../../includes/core/Server.hpp"
-#include "../../includes/commands/channelCommands.hpp"
+#include "../../includes/commands/ChannelCommands.hpp"
+
 
 std::vector<std::string> Server::SplitPM(std::string cmd)
 {

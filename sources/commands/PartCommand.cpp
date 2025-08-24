@@ -2,8 +2,6 @@
 #include "../../includes/commands/ChannelCommands.hpp"
 
 
-
-
 std::vector<std::string> Server::SplitPART(std::string command)
 {
 	std::vector<std::string> args = split_cmd(command);  //Output: ["PART", "#chan1,#chan2"]

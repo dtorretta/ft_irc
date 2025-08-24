@@ -49,7 +49,7 @@ class Server
 		void NewClient();
 		void NewData(int clientFd);
 		void parser(std::string &cmd, int fd);
-		
+
 
 		/******************/
 		/*     Getters    */
@@ -71,7 +71,7 @@ class Server
 		//void RemoveChannel(std::string &name); //🚨 quitar comment out
 		//void RmChannels(int fd); //⚠️ TODO!!!!!!!!!!! //🚨 quitar comment out
 		std::string trim(const std::string &s);
-		
+
 
 		/******************/
 		/*    Commands    */
@@ -79,7 +79,7 @@ class Server
 		typedef void (Server::*CommandHandler)(std::string, int);
 		SERVER_COMMAND_METHODS
 		REGISTRATION_COMMAND_METHODS //esto significa que estan incluidos en el heawder se server
-	
+
 	private:
 		static bool _signalRecieved; //old name: Signal     //signal to finish the execute loop. //como no hay mas de un objeto server a la vez, le quite el static
 		int _port; //old name: port  //pasado incialmente como parametro, es el puerto que quieres que tu socket de escucha use (osea, el puerto por el cual el servidor va a aceptar conexiones)
@@ -88,9 +88,9 @@ class Server
 		std::vector<struct pollfd> _fds; //old name: fds        //este array incluye todos los Fd de clientes conectados y del _listeningSocket
 		std::vector<Client> _clients; //old name: clients   // Manejar la lista de clientes conectados. este array incluye todos los objetos clientes que tienen info
 		//std::vector<Channel> _channels;  //🚨 quitar comment out
-		std::map<std::string, CommandHandler> _registrationCommands; 
+		std::map<std::string, CommandHandler> _registrationCommands;
   		std::map<std::string, CommandHandler> _channelCommands;
-	
+
 		//DESCARTADAS
 		//struct pollfd new_cli;   //lo puse directo en NewClient() y se llama 'struct pollfd newClientPollFd'
 		//struct sockaddr_in add;    //lo puse directo en init() y se llama  'struct sockaddr_in addr'      //Define la dirección y puerto donde el servidor aceptará conexiones
