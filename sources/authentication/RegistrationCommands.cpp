@@ -63,7 +63,7 @@ void Server::NICK(std::string nickname, int fd)
     std::vector<Channel>::iterator It = _channels.begin(); //It ya es el puntero a cada channels del server
     for (It; It != _channels.end(); It++)
     {
-        if (It->isClientInChannel(oldNickname) == cli) //It ya es el puntero a cada channel //VEEEER SI CAMBIA EL NOMBRE
+        if (It->get_clientByname(oldNickname) == cli) //It ya es el puntero a cada channel //VEEEER SI CAMBIA EL NOMBRE
             It->broadcast_messageExcept(MSG_NICK_UPDATE(oldNickname, nickname), fd);  // notificar a todos los miembros del cana
     }
 
