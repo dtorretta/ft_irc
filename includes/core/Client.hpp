@@ -36,12 +36,12 @@ class Client
         const std::string& get_buffer() const;   //old name: getBuffer          //& porque no queremos que devuelva una copia sino un pointer
         const std::vector<std::string>& get_cmd() const;  //old name: nueva          //devuelve un pointer
         const std::vector<std::string>& get_channels() const;  //devuelve un pointer
-        bool get_logedIn() const; 
+        bool get_logedIn() const;
 
         /******************/
 		/*     Setters    */
 		/******************/
-        void set_nickname(std::string nickname);  
+        void set_nickname(std::string nickname);
         void set_IPaddress(const std::string& address); //old name: setIpAdd
         void set_fd(int fd); //old name: SetFd
         void set_buffer(const std::string& chunk); //old name: SetFd

@@ -48,6 +48,23 @@
 		"unordered_map": "cpp",
 		"variant": "cpp",
 		"vector": "cpp",
-		"algorithm": "cpp"
+		"algorithm": "cpp",
+		"__tree": "cpp",
+		"csignal": "cpp",
+		"map": "cpp",
+		"numbers": "cpp",
+		"span": "cpp",
+		"bit": "cpp",
+		"compare": "cpp",
+		"concepts": "cpp",
+		"cstddef": "cpp",
+		"exception": "cpp",
+		"format": "cpp",
+		"ostream": "cpp",
+		"system_error": "cpp",
+		"text_encoding": "cpp",
+		"tuple": "cpp",
+		"type_traits": "cpp",
+		"utility": "cpp"
 	}
 }

@@ -104,6 +104,7 @@ void	Server::Channel_Exist(Channel *channel, Client *client, int fd, std::string
 void	Server::Channel_Not_Exist(std::string channel_name, Client *client, int fd)
 {
 	Channel new_channel;
+	new_channel.set_server(this);
 	new_channel.SetName(channel_name);
 	new_channel.set_createiontime();
 
