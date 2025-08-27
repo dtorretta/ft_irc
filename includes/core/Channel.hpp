@@ -5,11 +5,15 @@
 #include <utility>
 #include <ctime>
 
+
+//forward declaration
 class Client;
+class Server;
+
 class Channel
 {
 	private:
-	Server *_server;
+	Server* _server;
 	int _inviteOnly;
 	int _topic;
 	int _key;

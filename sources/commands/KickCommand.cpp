@@ -1,8 +1,8 @@
 #include "../../includes/core/Server.hpp"
+#include "../../includes/core/Channel.hpp"
 #include "../../includes/commands/channelCommands.hpp"
 
-
-std::vector<std::string>	Server::SplitKICK(std::string cmd)
+std::vector<std::string> Server::SplitKICK(std::string cmd)
 {
 	std::vector<std::string> args = split_cmd(cmd);  //Output: ["KICK", "#chan1,#chan2", "migue", ":Bad", "behavior"]
 	if (args.size() < 3)

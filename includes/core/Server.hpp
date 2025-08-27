@@ -17,7 +17,7 @@
 
 #include "Client.hpp"
 #include "Channel.hpp"
-#include "../commands/ChannelCommands.hpp"
+#include "../commands/ChannelCommands.hpp" 
 #include "../commands/RegistrationCommands.hpp"
 #include "../utils/messages.hpp"
 
@@ -31,7 +31,8 @@
 #define RESET	"\033[0m"
 
 class Client;
-//class Channel; //🚨 quitar comment out
+class Channel;
+
 
 class Server
 {
@@ -48,29 +49,30 @@ class Server
 		void execute();
 		void NewClient();
 		void NewData(int clientFd);
-		void parser(std::string &cmd, int fd);
+		void parser(const std::string &command, int fd);
+		std::vector<std::string> split_receivedBuffer(std::string buffer);
 
 
 		/******************/
 		/*     Getters    */
 		/******************/
-		Client* get_client(int fd) const;
-		Channel* get_channelByName(const std::string& name) const;
+		Client* get_client(int fd);
+		Channel* get_channelByName(const std::string& name);
+
 
 		/******************/
 		/*      Utils     */
 		/******************/
 		static void signalHandler(int sig);
-		std::vector<std::string> split_receivedBuffer(std::string buffer);
 		std::vector<std::string> split_cmd(std::string &cmd);
 		void _sendResponse(std::string response, int fd);
 		bool isregistered(int fd); //old name: notregistered
 		void ft_close(int Fd);
-		void RemoveFd(int Fd); //si no los uso por fuera de ft_close, eliminarlos del header y agregarlos a utils
-		void RemoveClient(int clientFd); //si no los uso por fuera de ft_close, eliminarlos del header y agregarlos a utils
-		//void RemoveChannel(std::string &name); //🚨 quitar comment out
-		//void RmChannels(int fd); //⚠️ TODO!!!!!!!!!!! //🚨 quitar comment out
-		std::string trim(const std::string &s);
+		void RemoveFd(int Fd);
+		void RemoveClient(int clientFd);
+		void RemoveClientFromChannel(int fd);
+		void RemoveChannel(std::string &name);
+		std::string normalize_param(const std::string &s, bool flag);
 
 
 		/******************/
@@ -78,22 +80,16 @@ class Server
 		/******************/
 		typedef void (Server::*CommandHandler)(std::string, int);
 		SERVER_COMMAND_METHODS
-		REGISTRATION_COMMAND_METHODS //esto significa que estan incluidos en el heawder se server
+		REGISTRATION_COMMAND_METHODS
 
 	private:
-		static bool _signalRecieved; //old name: Signal     //signal to finish the execute loop. //como no hay mas de un objeto server a la vez, le quite el static
-		int _port; //old name: port  //pasado incialmente como parametro, es el puerto que quieres que tu socket de escucha use (osea, el puerto por el cual el servidor va a aceptar conexiones)
+		static bool _signalRecieved; //old name: Signal
+		int _port; //old name: port
 		std::string _pass; //old name: password
-		int _listeningSocket; //old name: server_fdsocket   //fd del socket que escucha conexiones y que luego sera enlazado con 'bind' a _port
+		int _listeningSocket; //old name: server_fdsocket
 		std::vector<struct pollfd> _fds; //old name: fds        //este array incluye todos los Fd de clientes conectados y del _listeningSocket
 		std::vector<Client> _clients; //old name: clients   // Manejar la lista de clientes conectados. este array incluye todos los objetos clientes que tienen info
-		//std::vector<Channel> _channels;  //🚨 quitar comment out
+		std::vector<Channel> _channels;
 		std::map<std::string, CommandHandler> _registrationCommands;
   		std::map<std::string, CommandHandler> _channelCommands;
-
-		//DESCARTADAS
-		//struct pollfd new_cli;   //lo puse directo en NewClient() y se llama 'struct pollfd newClientPollFd'
-		//struct sockaddr_in add;    //lo puse directo en init() y se llama  'struct sockaddr_in addr'      //Define la dirección y puerto donde el servidor aceptará conexiones
-		//struct sockaddr_in cliadd; //lo puse directo en NewClient() y se llama  'struct sockaddr_in clientAddr'     //Define la dirección y puerto donde el servidor conectara al nuevo cliente
-
 };

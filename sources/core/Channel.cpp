@@ -159,7 +159,10 @@ void Channel::remove_client(int fd)
 	for (std::vector<Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
 	{
 		if (it->get_fd() == fd)
-			_clients.erase(it); break;
+		{
+			_clients.erase(it); 
+			break;
+		}
 	}
 }
 
@@ -168,7 +171,10 @@ void Channel::remove_admin(int fd)
 	for (std::vector<Client>::iterator it = _admins.begin(); it != _admins.end(); ++it)
 	{
 		if (it->get_fd() == fd)
-			_admins.erase(it); break;
+		{
+			_admins.erase(it); 
+			break;
+		}
 	}
 }
 

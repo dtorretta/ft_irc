@@ -9,10 +9,10 @@ void Server::signalHandler(int sig)
 bool Server::isregistered(int fd)
 {
     if (!get_client(fd) ||
+        !get_client(fd)->get_passRegistered() ||
         get_client(fd)->get_nickname().empty() ||
         get_client(fd)->get_username().empty() ||
-        get_client(fd)->get_nickname() == "*" /*||
-        !get_client(fd)->get_logedIn()*/) //⚠️ TO DO!!  //🚨 quitar comment out
+        get_client(fd)->get_nickname() == "*") //cuando usamos el *???
         return false;
 	
     return true;
@@ -25,68 +25,62 @@ void Server::_sendResponse(std::string response, int fd)
 }
 
 
-//quitar espacios al principio y al final
-std::string Server::trim(const std::string &s) //tengo que incluirla en el header?? sino mandar a utils
+//Trim spaces at the beginning and end. Additionally, when 'flag' is true, remove the leading ':'
+std::string Server::normalize_param(const std::string &s, bool flag)
 {
-    size_t start = s.find_first_not_of(" \t\r\n");
+    std::string result = s;
+
+    //Remove spaces/tabs at the beginnin
+    size_t start = result.find_first_not_of(" \t\r\n");
     if (start == std::string::npos)
         return "";
-    size_t end = s.find_last_not_of(" \t\r\n");
-    return s.substr(start, end - start + 1);
+
+    //Remove spaces/tabs at the end
+    size_t end = result.find_last_not_of(" \t\r\n");
+    if (end != std::string::npos)
+        result =  result.substr(start, end - start + 1);
+    if(flag)
+    {
+        if(!result.empty() && result[0] == ':') //Remove ':'
+            result.erase(result.begin());
+    }
+    return result;
 }
 
 //splits the string with the whole command (ex: "PRIVMSG #general :Hello, world!") in different strings
 std::vector<std::string> Server::split_cmd(std::string &cmd)
 {
     std::vector<std::string> commands;
-    std::istringstream iss(cmd); //transforma el string en un stream de entrada para que pueda funcionar con >>
-    std::string token; //el primer “token” de cada línea siempre se interpreta como el comando
-    while(iss >> token) //El operador >> lee hasta el primer espacio en blanco y lo guarda en la variable command.
+    std::istringstream iss(cmd); //converts the string into an input stream so it can work with >>
+    std::string token; 
+    while(iss >> token) //the >> operator reads until the first whitespace and stores it in the token variable
     {
+        if(token[0] == ':')
+        {
+            std::string rest;
+            std::getline(iss, rest);
+            token.erase(token.begin());
+            token = token + rest;
+        }
         commands.push_back(token);
         token.clear();
     }
     return commands;
 }
 
-
-
-
-
-
-
-/*
- *  Cuando queremos eliminar y cerrar todo, el Fd es -42 y la secuencia correcta es:
- *      - Cerrar cada file descriptor individualmente (con close(fd)) para liberar el recurso del sistema operativo.
- *      - Luego, hacer clear() en el vector que almacena esos fds, para eliminar todos los elementos del vector y dejarlo vacío.
- *  cuando se quiera eliminar un Fd en particular, el parametro sera algun valor > 0
-*/
-
 void Server::ft_close(int Fd)
 {
-    RemoveClient(Fd); //si nunca los voy a llamar por fuera de esta funcion, puedo quitarlols del header y agregarlos a utils
-    RemoveFd(Fd);  //si nunca los voy a llamar por fuera de esta funcion, puedo quitarlols del header y agregarlos a utils
-    //RemoveChannel(Fd);
+    RemoveClient(Fd);
+    RemoveFd(Fd);
+    RemoveClientFromChannel(Fd);
     close(Fd);
 }
 
-// void Server::RemoveClient(int clientFd)
-// {
-//     for (size_t i = 0; i < _clients.size(); i++)
-//     {
-//         if (_clients[i].get_fd() == clientFd)
-//         {
-//             _clients.erase(_clients.begin() + i);
-//             break;
-//         }
-//     }
-// }
-
-void Server::RemoveClient(int clientFd) //c++ style
+void Server::RemoveClient(int clientFd)
 {
     for (std::vector<Client>::iterator it = _clients.begin(); it != _clients.end(); it++)
     {
-        if (it->get_fd() == clientFd) //accede al método del objeto al que apunta.
+        if (it->get_fd() == clientFd)
         {
             _clients.erase(it);
             break;
@@ -94,21 +88,7 @@ void Server::RemoveClient(int clientFd) //c++ style
     }
 }
 
-
-// void Server::RemoveFd(int Fd)
-// {
-//     for (size_t i = 0; i < _fds.size(); i++)
-//     {
-//         if (_fds[i].fd == Fd)
-//         {
-//             _fds.erase(_fds.begin() + i);
-//             break;
-//         }
-//     }
-//     this->_listeningSocket = -1;
-// }
-
-void Server::RemoveFd(int Fd) //c++ style
+void Server::RemoveFd(int Fd)
 {
     for (std::vector<struct pollfd>::iterator it = _fds.begin(); it != _fds.end(); it++)
     {
@@ -121,14 +101,32 @@ void Server::RemoveFd(int Fd) //c++ style
     this->_listeningSocket = -1;
 }
 
-// void Server::RemoveChannel(std::string &name)
-// {
-//     for (std::vector<Channel>::iterator it = _channels.begin(); it != _channels.end(); ++it)
-//     {
-//         if (it->GetName() == name)
-//         {
-//             _channels.erase(it);
-//             return;
-//         }
-//     }
-// }
+void Server::RemoveClientFromChannel(int fd)
+{
+	for (size_t i = 0; i < this->_channels.size(); i++)
+    {
+		int flag = 0;
+		if (_channels[i].get_clientByFd(fd))
+			{_channels[i].remove_client(fd); flag = 1;}
+		else if (_channels[i].get_adminByFd(fd))
+			{_channels[i].remove_admin(fd); flag = 1;}
+		if (_channels[i].get_totalUsers() == 0)
+			{_channels.erase(_channels.begin() + i); i--; continue;}
+		if (flag){
+			std::string rpl = ":" + get_client(fd)->get_nickname() + "!~" + get_client(fd)->get_username() + "@localhost QUIT Quit\r\n";
+			_channels[i].broadcast_message(rpl); //deberia no incluir al que lo emitio?
+		}
+	}
+}
+
+void Server::RemoveChannel(std::string &name)
+{
+    for (std::vector<Channel>::iterator it = _channels.begin(); it != _channels.end(); ++it)
+    {
+        if (it->get_name() == name)
+        {
+            _channels.erase(it);
+            return;
+        }
+    }
+}

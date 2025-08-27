@@ -6,16 +6,12 @@
 
 // Forward declarations
 class Client;
-//class Channel;
+class Channel;
 class Server;
 
 /*******************/
 /* Server Commands */
 /*******************/
-
-// Command function pointer type
-//typedef void (Server::*CommandHandler)(std::string cmd, int fd);
-//si no cambia el Server::Parser, esta funcion se puede eliminar
 
 // This macro defines all Server command methods
 #define SERVER_COMMAND_METHODS \
@@ -30,14 +26,13 @@ class Server;
 	/***PRIVMSG Command***/ \
 	void	PRIVMSG(std::string cmd, int fd); \
 	std::vector<std::string> SplitPM(std::string command); \
-	/***TOPIC Command***/
+	/***TOPIC Command***/ \
 	void	TOPIC(std::string cmd, int fd); \
 	std::vector<std::string> SplitTopic(std::string cmd); \
-	/***INVITE Command***/
+	/***INVITE Command***/ \
 	void	INVITE(std::string cmd, int fd); \
-	/***KICK Command***/
+	/***KICK Command***/ \
 	void	KICK(std::string cmd, int fd); \
-	std::vector<std::string> SplitKICK(std::string cmd); \
+	std::vector<std::string> SplitKICK(std::string cmd); 
 	/***QUIT Command***/
-	
 	/***MODE Command***/

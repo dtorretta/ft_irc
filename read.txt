@@ -227,3 +227,52 @@ if (it != _registrationCommands.end())
 
 (this->*handler)
 handler es un puntero '*handler' a la funcion 'value / second' que esta declarada en la clase server por eso la llamados con 'this->'
+
+
+------------
+
+/*
+
+setters:
+
+- usamos & para evitar hace4r una copia extra cuando lo pasamos omo parametro.
+    De todos modos al hacer '_cmd = cmds' vamos a guardar una copia
+- usamos const que significa que dentro del setter no podés modificar el parámetro cmds.
+    Asignar (copiar) no es modificar el objeto original, es crear una copia interna.
+
+
+    Tipos primitivos (int, char, bool, etc.) → pasarlos por valor normal. (nousamos const ni &)
+
+
+*/
+
+
+
+/*
+Cuando recv() no leyó todo el mensaje porque el buffer es limitado (ejemplo 1024 bytes) y quedaron datos sin leer, 
+esos datos ya están en el buffer interno del sistema operativo (SO) para esa conexión TCP.
+
+Entonces:
+
+Aunque el cliente no haya enviado más datos nuevos,
+El socket sigue teniendo datos pendientes en su cola interna (buffer del SO) que todavía no leíste,
+Por eso, en la siguiente llamada a poll(), el descriptor del socket sigue marcándose con POLLIN, indicando que hay datos para leer,
+Y al llamar a recv() de nuevo, obtendrás el siguiente fragmento del mensaje.
+
+
+Cliente envía datos → llegan al buffer interno del socket en el servidor.
+poll() → detecta que hay datos (POLLIN).
+recv() → lees N bytes (por ejemplo 1024), y esos N bytes se eliminan del buffer interno del SO.
+Si quedó más en el buffer, poll volverá a marcar POLLIN en el siguiente ciclo, incluso si el cliente ya no manda nada más.
+Cuando lees todo (el buffer interno queda vacío),
+	poll ya no detecta datos → no se ejecuta NewData() hasta que lleguen má
+
+*/
+
+
+dentro de init --> struct sockaddr_in addr;
+
+	//al crear un socket se necesita crear un nuevo elemento de la estructura sockaddr_in para indicar a qué dirección IP y puerto se debe “atar” ese socket
+	//solo en estos casos, definimos tambien los elementos de addr, necesarios para usar 'bind' (en el caso de clientes nuevos omitimos esto)
+	//Esta estructura es la manera que el sistema operativo usa para representar direcciones de red IPv4 en C/C++
+	struct sockaddr_in addr;

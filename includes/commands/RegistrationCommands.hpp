@@ -5,12 +5,16 @@
 
 // Forward declarations
 class Client;
-//class Channel;
+class Channel;
 class Server;
 
-// This macro defines all Server command methods
+/*************************/
+/* Registration Commands */
+/*************************/
+
+// This macro defines all registration command methods
 #define REGISTRATION_COMMAND_METHODS \
-	void NICK(std::string nickname, int fd); \
-	void USER(std::string nickname, int fd); \ //TODO ⚠️
-	void PASS(std::string nickname, int fd);  //TODO ⚠️
+	void NICK(std::string cmd, int fd); \
+	void USER(std::string cmd, int fd); \
+	void PASS(std::string cmd, int fd);
 
