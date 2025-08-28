@@ -40,6 +40,7 @@ class Client
         const std::vector<std::string>& get_channels() const;  //devuelve un pointer
         bool get_logedIn() const;
         bool get_passRegistered() const;
+		bool get_channelInvitation(std::string &channel_name);
 
 
         /******************/
@@ -51,13 +52,15 @@ class Client
         void set_fd(int fd); //old name: SetFd
         void set_buffer(const std::string& chunk); //old name: SetFd
         void set_cmd(const std::vector<std::string>& cmds); //old name: nueva
-        void set_passRegistered(const bool value); 
+        void set_passRegistered(const bool value);
         void set_logedIn(const bool value);
 
         /******************/
 		/*      Utils     */
 		/******************/
         void clearBuffer();
+		void addChannelInvitation(std::string channel_name);
+		void removeChannelInvitation(std::string &channel_name);
 };
 
 

@@ -7,9 +7,9 @@
 /******************/
 #define MSG_WELCOME(nickname) (": 001 " + nickname + " : Connected to IRC network successfully!" + CRLF)
 #define MSG_USERMODE(hostname, channelname, mode, user)  (":" + hostname + " MODE " + channelname + " " + mode + " " + user + CRLF)
-#define MSG_CREATION_TIME(nickname, channelname, creationtime) (": 329 " + nickname + " #" + channelname + " " + creationtime + CRLF)
+#define MSG_CREATION_TIME(nickname, channelname, creationtime) (": 329 " + nickname + " " + channelname + " " + creationtime + CRLF)
 #define MSG_CHANNEL_MODES(nickname, channelname, modes) (": 324 " + nickname + " #" + channelname + " " + modes + CRLF)
-#define MSG_MODE_CHANGE(hostname, channelname, mode, arguments) (":" + hostname + " MODE #" + channelname + " " + mode + " " + arguments + CRLF)
+#define MSG_MODE_CHANGE(nickname, user, channelname, modes, params) (":" + nickname + "!~" + user + "@localhost MODE " + channelname + " " + modes + " " + params + CRLF)
 #define MSG_NICK_UPDATE(oldnickname, nickname) (":" + oldnickname + " NICK " + nickname + CRLF)
 #define MSG_USER_JOIN(hostname, ipaddress, channelname) (":" + hostname + "@" + ipaddress + " JOIN " + channelname + CRLF)
 #define MSG_NAMES_LIST(nickname, channelname, clientslist) (": 353 " + nickname + " @ " + channelname + " :" + clientslist + CRLF)
@@ -34,7 +34,7 @@
 #define ERROR_UNRECOGNIZED_MODE(nickname, channelname, mode) (": 472 " + nickname + " #" + channelname + " " + mode + " :is an unknown channel mode" + CRLF)
 #define ERROR_INSUFFICIENT_PARAMS(nickname) (": 461 " + nickname + " :Insufficient parameters provided." + CRLF)
 #define ERROR_CHANNEL_NOT_EXISTS(nickname, channelname) (": 403 " + nickname + " " + channelname + " :Channel does not exist" + CRLF)
-#define ERROR_NOT_CHANNEL_OP(channelname) (": 482 " + channelname + " :You are not a channel operator" + CRLF)
+#define ERROR_NOT_CHANNEL_OP(channelname) (": 482 #" + channelname + " :You are not a channel operator" + CRLF)
 #define ERROR_NICK_NOT_FOUND(channelname, name) (": 401 #" + channelname + " " + name + " :No such nickname/channel" + CRLF )
 #define ERROR_WRONG_PASSWORD(nickname) (": 464 " + nickname + " :Incorrect password!" + CRLF )
 #define ERROR_ALREADY_REGISTERED(nickname) (": 462 " + nickname + " :You cannot register again!" + CRLF )
@@ -49,10 +49,11 @@
 #define ERROR_INVITE_ONLY(nick, chan) (": 473 " + nick + " " + chan + " :Cannot join channel (+i)" + CRLF)
 #define ERROR_CHANNEL_FULL(nick, chan) (": 471 " + nick + " " + chan + " :Cannot join channel (+l)" + CRLF)
 #define ERROR_NOT_IN_CHANNEL(nick, chan) (": 442 " + nick + " " + chan + " :You are not on this channel" + CRLF)
-#define ERROR_USER_NOT_IN_CHANNEL(nick, chan) (": 441 " + nick + " " + chan + " :User not on this channel" + CRLF)
+#define ERROR__USER_NOT_IN_CHANNEL(nick, chan) (": 441 " + nick + " " + chan + " :User not on this channel" + CRLF)
 #define ERROR_ALREADY_IN_CHANNEL(nick, chan) (": 443 " + nick + " " + chan + " :is already on this channel" + CRLF)
 #define ERROR_NO_TEXT_TO_SEND(nick) (": 412 " + nick + " :No text to send" + CRLF)
 #define ERROR_NO_RECIPIENT(nickname) (": 411 " + nickname + " :No recipient given (PRIVMSG)" + CRLF)
+
 
 /*
 #define RPL_CONNECTED(nickname) (": 001 " + nickname + " : Welcome to the IRC server!" + CRLF)

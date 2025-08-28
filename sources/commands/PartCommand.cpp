@@ -20,14 +20,14 @@ std::vector<std::string> Server::SplitPART(std::string command)
 void	Server::PART(std::string cmd, int fd)
 {
 	//1. Check if user is registered
-	if (!notregistered(fd))
+	if (!isregistered(fd))
 	{
 		_sendResponse(ERROR_NOT_REGISTERED_YET(std::string("*")), fd);
 		return ;
 	}
 
 	//2. Get client object
-	Client *client = GetClient(fd);
+	Client *client = get_client(fd);
 	if (!client)
 		return ;
 
@@ -35,7 +35,7 @@ void	Server::PART(std::string cmd, int fd)
 	std::vector<std::string> token = SplitPART(cmd);
 	if (token.size() == 0)
 	{
-		_sendResponse(ERROR_INSUFFICIENT_PARAMS(client->GetNickName()), fd);
+		_sendResponse(ERROR_INSUFFICIENT_PARAMS(client->get_nickname()), fd);
 		return ;
 	}
 
@@ -49,27 +49,27 @@ void	Server::PART(std::string cmd, int fd)
 	for (size_t i = 0; i < token.size(); i++)
 	{
 		std::string channel_name = token[i];
-		Channel *channel = GetChannel(channel_name);
+		Channel *channel = get_channelByName(channel_name);
 		if (channel)
 		{
-			if (!channel->get_client(fd) && !channel->get_admin(fd))
+			if (!channel->get_clientByFd(fd) && !channel->get_adminByFd(fd))
 			{
-				_sendResponse(ERROR_NOT_IN_CHANNEL(client->GetNickName(), channel_name), fd);
+				_sendResponse(ERROR_NOT_IN_CHANNEL(client->get_nickname(), channel_name), fd);
 				continue ;
 			}
 
 			// Send PART message to ALL channel members
-			channel->sendTo_all(MSG_USER_PART(client->GetNickName(), client->GetUserName(), client->getIpAdd(), channel_name, reason));
+			channel->broadcast_message(MSG_USER_PART(client->get_nickname(), client->get_username(), client->get_IPaddress(), channel_name, reason));
 
 			// Remove client from channel
-			if (channel->get_client(fd))
+			if (channel->get_clientByFd(fd))
 				channel->remove_client(fd);
-			else if (channel->get_admin(fd))
+			else if (channel->get_adminByFd(fd))
 				channel->remove_admin(fd);
 		}
 		else
 		{
-			_sendResponse(ERROR_CHANNEL_NOT_EXISTS(client->GetNickName(), channel_name), fd);
+			_sendResponse(ERROR_CHANNEL_NOT_EXISTS(client->get_nickname(), channel_name), fd);
 			return ;
 		}
 	}

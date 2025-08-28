@@ -58,7 +58,7 @@ class Channel
 	int get_invitOnly();
 	int get_topicMode();
 	int get_keyMode();
-	int get_userLimit();
+	int get_userLimit(); // GetLimit
 	int get_totalUsers(); //antes GetClientsNumber
 	bool get_topicRestriction() const;
 	bool get_ModeAtIndex(size_t index);
@@ -69,7 +69,7 @@ class Channel
 	std::string get_name();
 	std::string get_topicModificationTime();
 	std::string get_channelCreationTime();
-	std::string get_memberList();
+	std::string get_memberList(); // clientChannel_list
     std::string get_activeModes();
 	Client *get_clientByFd(int fd);
 	Client *get_adminByFd(int fd);

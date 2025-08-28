@@ -17,7 +17,7 @@
 
 #include "Client.hpp"
 #include "Channel.hpp"
-#include "../commands/ChannelCommands.hpp" 
+#include "../commands/ChannelCommands.hpp"
 #include "../commands/RegistrationCommands.hpp"
 #include "../utils/messages.hpp"
 
@@ -57,6 +57,7 @@ class Server
 		/*     Getters    */
 		/******************/
 		Client* get_client(int fd);
+		Client *get_clientNick(std::string nickname);
 		Channel* get_channelByName(const std::string& name);
 
 
@@ -73,6 +74,7 @@ class Server
 		void RemoveClientFromChannel(int fd);
 		void RemoveChannel(std::string &name);
 		std::string normalize_param(const std::string &s, bool flag);
+		void addChannel(Channel newChannel);
 
 
 		/******************/

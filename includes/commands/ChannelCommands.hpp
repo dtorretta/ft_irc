@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <string>
@@ -33,6 +32,9 @@ class Server;
 	void	INVITE(std::string cmd, int fd); \
 	/***KICK Command***/ \
 	void	KICK(std::string cmd, int fd); \
-	std::vector<std::string> SplitKICK(std::string cmd); 
-	/***QUIT Command***/
-	/***MODE Command***/
+	std::vector<std::string> SplitKICK(std::string cmd); \
+	/***QUIT Command***/ \
+	/***MODE Command***/ \
+	void	MODE(std::string cmd, int fd); \
+	std::vector<std::string> SplitMODE(std::string cmd); \
+	bool	isChannelValid(Channel *channel, std::string channel_string, std::string client_nick, int fd);

@@ -45,10 +45,10 @@ void  Server::TOPIC(std::string cmd, int fd)
 		return ;
 	}
 
-	Client *client = GetClient(fd);
+	Client *client = get_client(fd);
 	if (!client)
 		return ;
-	std::string client_nick = client->GetNickName();
+	std::string client_nick = client->get_nickname();
 
 	// 2. Parse and validate parameters
 	std::vector<std::string> token = SplitTopic(cmd);
@@ -68,42 +68,42 @@ void  Server::TOPIC(std::string cmd, int fd)
 		topic = token[1];
 
 	// 3. Check membership and existence
-	Channel *channel = GetChannel(target);
+	Channel *channel = get_channelByName(target);
 	if (!channel)
 	{
 		_sendResponse(ERROR_CHANNEL_NOT_EXISTS(client_nick, target), fd);
 		return ;
 	}
-	else if (!channel->get_client(fd) && !channel->get_admin(fd))
+	else if (!channel->get_clientByFd(fd) && !channel->get_adminByFd(fd))
 	{
-		_sendResponse(ERROR_NOT_IN_CHANNEL(client_nick, channel->GetName()), fd);
+		_sendResponse(ERROR_NOT_IN_CHANNEL(client_nick, channel->get_name()), fd);
 		return ;
 	}
 
 	// Topic SET mode
 	if (token.size() == 2)
 	{
-		if (channel->Gettopic_restriction() && !channel->get_admin(fd))
+		if (channel->get_topicRestriction() && !channel->get_adminByFd(fd))
 		{
-			_sendResponse(ERROR_NOT_CHANNEL_OP(channel->GetName()), fd);
+			_sendResponse(ERROR_NOT_CHANNEL_OP(channel->get_name()), fd);
 			return ;
 		}
-		channel->SetTopicName(topic);
-		channel->SetTime(getCurrentTime());
-		channel->SetTopicCreator(client_nick);
-		channel->sendTo_all(MSG_CHANNEL_TOPIC(client_nick, channel->GetName(), topic), fd);
-		channel->sendTo_all(MSG_TOPIC_WHO_TIME(client_nick, channel->GetName(), channel->GetTime()), fd);
+		channel->set_topicName(topic);
+		channel->set_topicModificationTime(getCurrentTime());
+		channel->set_topicCreator(client_nick);
+		channel->broadcast_messageExcept(MSG_CHANNEL_TOPIC(client_nick, channel->get_name(), topic), fd);
+		channel->broadcast_messageExcept(MSG_TOPIC_WHO_TIME(client_nick, channel->get_name(), channel->get_topicModificationTime()), fd);
 	}
 
 	// Topic VIEW mode
 	if (token.size() == 1)
 	{
-		if (channel->GetTopicName() == "")
-			_sendResponse(MSG_NO_SET_TOPIC(client_nick, channel->GetName()), fd);
+		if (channel->get_topicName() == "")
+			_sendResponse(MSG_NO_SET_TOPIC(client_nick, channel->get_name()), fd);
 		else
 		{
-			_sendResponse(MSG_CHANNEL_TOPIC(client_nick, channel->GetName(), channel->GetTopicName()), fd);
-			_sendResponse(MSG_TOPIC_WHO_TIME(channel->GetTopicCreator(), channel->GetName(), channel->GetTime()), fd);
+			_sendResponse(MSG_CHANNEL_TOPIC(client_nick, channel->get_name(), channel->get_topicName()), fd);
+			_sendResponse(MSG_TOPIC_WHO_TIME(channel->get_topicCreator(), channel->get_name(), channel->get_topicModificationTime()), fd);
 		}
 	}
 }

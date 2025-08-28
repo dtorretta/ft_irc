@@ -66,10 +66,19 @@ const std::vector<std::string>& Client::get_cmd() const {return _cmd;}
 const std::vector<std::string>& Client::get_channels() const {return _channels;}
 bool Client::get_logedIn() const {return this->_logedIn;}
 bool Client::get_passRegistered() const {return this->_passRegistered;}
-std::string Client::get_hostname() const 
+std::string Client::get_hostname() const
 {
 	std::string hostname = this->get_nickname() + "!" + this->get_username();
 	return hostname;
+}
+bool Client::get_channelInvitation(std::string &channel_name)
+{
+	for (size_t i = 0; i < this->_channels.size(); i++)
+	{
+		if (this->_channels[i] == channel_name)
+			return true;
+	}
+	return false;
 }
 
 
@@ -77,7 +86,16 @@ std::string Client::get_hostname() const
 /*      Utils     */
 /******************/
 
-void Client::clearBuffer()
+void Client::clearBuffer() {_buffer.clear();}
+void Client::addChannelInvitation(std::string channel_name) {_channels.push_back(channel_name);}
+void Client::removeChannelInvitation(std::string &channel_name)
 {
-    _buffer.clear();
+	for (size_t i = 0; i < this->_channels.size(); i++)
+	{
+		if (this->_channels[i] == channel_name)
+			{
+				this->_channels.erase(this->_channels.begin() + i);
+				return;
+			}
+	}
 }

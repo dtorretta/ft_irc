@@ -41,10 +41,10 @@ void Server::KICK(std::string cmd, int fd)
 	}
 
 	//2. Get client object
-	Client *client = GetClient(fd);
+	Client *client = get_client(fd);
 	if (!client)
 		return ;
-	std::string client_nick = client->GetNickName();
+	std::string client_nick = client->get_nickname();
 
 	//3. Parse parameters and checks
 	std::vector<std::string> token = SplitKICK(cmd);
@@ -70,43 +70,46 @@ void Server::KICK(std::string cmd, int fd)
 	for (size_t i = 0; i < individual_channels.size(); i++)
 	{
 		std::string target = individual_channels[i];
-		Channel *channel = GetChannel(target);
+		Channel *channel = get_channelByName(target);
 		// Validate parameters (empty target, if user in channel)
 		if (!channel)
 		{
 			_sendResponse(ERROR_CHANNEL_NOT_EXISTS(client_nick, target), fd);
 			continue ; // Continue to next target
 		}
-		else if (!channel->get_client(fd) && !channel->get_admin(fd))
+		else if (!channel->get_clientByFd(fd) && !channel->get_adminByFd(fd))
 		{
-			_sendResponse(ERROR_NOT_IN_CHANNEL(client_nick, channel->GetName()), fd);
+			_sendResponse(ERROR_NOT_IN_CHANNEL(client_nick, channel->get_name()), fd);
 			continue ; // Continue to next target
 		}
-		else if (!channel->get_admin(fd))
+		else if (!channel->get_adminByFd(fd))
 		{
-			_sendResponse(ERROR_NOT_CHANNEL_OP(channel->GetName()), fd);
+			_sendResponse(ERROR_NOT_CHANNEL_OP(channel->get_name()), fd);
 			continue ;
 		}
-		else if (!channel->clientInChannel(target_user))
+		else if (!channel->isClientInChannel(target_user))
 		{
-			_sendResponse(ERROR_USER_NOT_IN_CHANNEL(target_user, channel->GetName()), fd);
+			_sendResponse(ERROR_NOT_IN_CHANNEL(target_user, channel->get_name()), fd);
 			continue ; // Continue to next target
 		}
 		// Kick execution
 		else
 		{
 			if (reason.empty())
-				channel->sendTo_all(MSG_KICK_USER(client_nick, GetClient(fd)->GetUserName(), channel->GetName(), target_user), fd);
+				channel->broadcast_messageExcept(MSG_KICK_USER(client_nick, get_client(fd)->get_username(), channel->get_name(), target_user), fd);
 			else
-				channel->sendTo_all(MSG_KICK_USER_REASON(client_nick, GetClient(fd)->GetUserName(), channel->GetName(), target_user, reason), fd);
+				channel->broadcast_messageExcept(MSG_KICK_USER_REASON(client_nick, get_client(fd)->get_username(), channel->get_name(), target_user, reason), fd);
 
-			if (channel->get_admin(channel->GetClientInChannel(target_user)->GetFd()))
-				channel->remove_admin(channel->GetClientInChannel(target_user)->GetFd());
+			if (channel->get_adminByFd(channel->get_clientByname(target_user)->get_fd()))
+				channel->remove_admin(channel->get_clientByname(target_user)->get_fd());
 			else
-				channel->remove_client(channel->GetClientInChannel(target_user)->GetFd());
+				channel->remove_client(channel->get_clientByname(target_user)->get_fd());
 
-			if (channel->GetClientsNumber() == 0)
-				RemoveChannel(channel->GetName());
+			if (channel->get_totalUsers() == 0)
+			{
+				std::string channel_name = channel->get_name();
+				RemoveChannel(channel_name);
+			}
 		}
 	}
 }

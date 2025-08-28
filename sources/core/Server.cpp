@@ -18,7 +18,7 @@ Server::Server(int port, std::string pass)
 	_channelCommands["TOPIC"] = &Server::TOPIC;
 	_channelCommands["INVITE"] = &Server::INVITE;
 	_channelCommands["KICK"] = &Server::KICK;
-	//_channelCommands["MODE"] = &Server::MODE; //🚨 quitar comment out
+	_channelCommands["MODE"] = &Server::MODE;
 }
 
 Server::Server(Server const &copy)
@@ -59,7 +59,7 @@ Server::~Server()
 	for (size_t i = 0; i < _fds.size(); i++)
 		close(_fds[i].fd);
 
-	_channels.clear(); 
+	_channels.clear();
 	_clients.clear();
 	_fds.clear();
 	this->_listeningSocket = -1;
@@ -86,7 +86,7 @@ Server::~Server()
 void Server::init()
 {
 	//1. Creates a new socket (fd) that uses the IPv4 address and the TCP protocol (to send/receive data reliably)
-	this->_listeningSocket = socket(AF_INET, SOCK_STREAM, 0); 
+	this->_listeningSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (_listeningSocket < 0)
 		throw(std::runtime_error("Failed to create socket"));
 
@@ -296,6 +296,9 @@ std::vector<std::string> Server::split_receivedBuffer(std::string buffer) //no n
 	return commands;
 }
 
+void Server::addChannel(Channel newChannel){this->_channels.push_back(newChannel);}
+
+
 
 /*****************/
 /*    Getters    */
@@ -308,6 +311,16 @@ Client* Server::get_client(int fd)
 		if (_clients[i].get_fd() == fd) {
 			return &_clients[i];
 		}
+	}
+	return NULL;
+}
+
+Client *Server::get_clientNick(std::string nickname)
+{
+	for (size_t i = 0; i < this->_clients.size(); i++)
+	{
+		if (this->_clients[i].get_nickname() == nickname)
+			return &this->_clients[i];
 	}
 	return NULL;
 }

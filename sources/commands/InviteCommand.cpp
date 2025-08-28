@@ -25,7 +25,7 @@ void Server::INVITE(std::string cmd, int fd)
 		return ;
 	}
 	std::string guest_nick = args[1];
-	Client *guest = GetClientNick(guest_nick);
+	Client *guest = get_clientNick(guest_nick);
 	std::string channel_name = args[2];
 	Channel *channel = get_channelByName(channel_name);
 
@@ -40,12 +40,12 @@ void Server::INVITE(std::string cmd, int fd)
 		_sendResponse(ERROR_NOT_IN_CHANNEL(client_nick, channel_name), fd);
 		return ;
 	}
-	if (!GetClientNick(guest_nick))
+	if (!get_clientNick(guest_nick))
 	{
 		_sendResponse(ERROR_NICK_NOT_FOUND(guest_nick, client_nick), fd);
 		return ;
 	}
-	if (get_channelByName(channel_name)->GetClientInChannel(guest_nick))
+	if (get_channelByName(channel_name)->get_clientByname(guest_nick))
 	{
 		_sendResponse(ERROR_ALREADY_IN_CHANNEL(client_nick, channel_name), fd);
 		return ;
@@ -56,14 +56,15 @@ void Server::INVITE(std::string cmd, int fd)
 		return ;
 	}
 	if ((get_channelByName(channel_name)->get_userLimit()
-		&& get_channelByName(channel_name)->GetClientsNumber() >= get_channelByName(channel_name)->get_userLimit()))
+		&& get_channelByName(channel_name)->get_userLimit() >= get_channelByName(channel_name)->get_userLimit()))
 	{
 		_sendResponse(ERROR_CHANNEL_FULL(client_nick, channel_name), fd);
 		return ;
 	}
 
 	//5. Store invite in vector and send it to guest
-	guest->AddChannelInvite(channel_name);
+	guest->addChannelInvitation(channel_name);
+
 	_sendResponse(MSG_TO_INVITER(client_nick, guest_nick, channel_name), fd);
 	_sendResponse(MSG_TO_INVITEE(guest->get_hostname(), guest_nick, channel_name), guest->get_fd());
 }

@@ -84,30 +84,30 @@ void Server::PRIVMSG(std::string cmd, int fd)
 
 		if (target[0] == '#') // Channel
 		{
-			Channel *channel = GetChannel(target);
+			Channel *channel = get_channelByName(target);
 			// Validate parameters (empty target, if user in channel)
 			if (!channel)
 			{
 				_sendResponse(ERROR_CHANNEL_NOT_EXISTS(client_nick, target), fd);
 				continue ; // Continue to next target
 			}
-			else if (!channel->get_client(fd) && !channel->get_admin(fd))
+			else if (!channel->get_clientByFd(fd) && !channel->get_adminByFd(fd))
 			{
-				_sendResponse(ERROR_NOT_IN_CHANNEL(client_nick, channel->GetName()), fd);
+				_sendResponse(ERROR_NOT_IN_CHANNEL(client_nick, channel->get_name()), fd);
 				continue ; // Continue to next target
 			}
 			// Send to channel
-			channel->sendTo_all(MSG_PRIVMSG_CHANNEL(client_nick, client->GetUserName(), target, message), fd);
+			channel->broadcast_messageExcept(MSG_PRIVMSG_CHANNEL(client_nick, client->get_username(), target, message), fd);
 		}
 		else // User
 		{
-			if (!GetClientNick(target))
+			if (!get_clientNick(target))
 			{
 				_sendResponse(ERROR_NICK_NOT_FOUND(target, client_nick), fd);
 				continue ; // Continue to next target
 			}
 			// Send to user
-			_sendResponse(MSG_PRIVMSG_USER(client->GetNickName(), client->GetUserName(), target, message), GetClientNick(target)->get_fd());
+			_sendResponse(MSG_PRIVMSG_USER(client->get_nickname(), client->get_username(), target, message), get_clientNick(target)->get_fd());
 		}
 	}
 }
