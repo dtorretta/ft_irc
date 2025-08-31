@@ -11,7 +11,7 @@ Server::Server(int port, std::string pass)
 	_registrationCommands["NICK"] = &Server::NICK;
 	_registrationCommands["USER"] = &Server::USER;
 	_registrationCommands["PASS"] = &Server::PASS;
-	//_registrationCommands["QUIT"] = &Server::QUIT; //🚨 quitar comment out
+	_channelCommands["QUIT"] = &Server::QUIT;
 	_channelCommands["JOIN"] = &Server::JOIN;
 	_channelCommands["PART"] = &Server::PART;
 	_channelCommands["PRIVMSG"] = &Server::PRIVMSG;
@@ -31,7 +31,7 @@ Server::Server(Server const &copy)
 	this->_clients = copy._clients;
 	this->_channels = copy._channels;
 	this->_registrationCommands = copy._registrationCommands;
-  	this->_channelCommands = copy._registrationCommands;
+  	this->_channelCommands = copy._channelCommands;
 }
 
 Server& Server::operator=(Server const &copy)
@@ -46,7 +46,7 @@ Server& Server::operator=(Server const &copy)
 		this->_clients = copy._clients;
 		this->_channels = copy._channels;
 		this->_registrationCommands = copy._registrationCommands;
-  		this->_channelCommands = copy._registrationCommands;
+  		this->_channelCommands = copy._channelCommands;
 	}
 	return(*this);
 }
@@ -83,6 +83,22 @@ Server::~Server()
 	bind --> associates the socket with the IP address and port set in the addr struct
 	listen --> puts the socket into listening mode for incoming connections
 */
+
+/**
+ * @brief Initializes the server socket and prepares it for listening.
+ * @return void
+ *
+ * @details Creates and configures the TCP listening socket:
+ * - Creates TCP IPv4 socket for incoming connections
+ * - Sets SO_REUSEADDR to avoid "Address already in use" errors
+ * - Configures non-blocking mode for accept() operations
+ * - Binds socket to specified port on all interfaces
+ * - Starts listening for incoming connections
+ * - Adds listening socket to poll monitoring array
+ *
+ * @throws std::runtime_error If socket creation, configuration, or binding fails
+ * @see execute() for the main server loop that uses this socket
+ */
 void Server::init()
 {
 	//1. Creates a new socket (fd) that uses the IPv4 address and the TCP protocol (to send/receive data reliably)
@@ -129,6 +145,21 @@ void Server::init()
  *      - If it is the listening socket with POLLIN, there is a new client trying to connect.
  *      - If it is a client socket with POLLIN, that client has sent data you can read.
 */
+
+/**
+ * @brief Main server execution loop using poll() for handling multiple clients.
+ * @return void
+ *
+ * @details Monitors all sockets for activity and dispatches events:
+ * - Uses poll() to wait for activity on any monitored socket
+ * - Handles new client connections on listening socket
+ * - Processes incoming data from existing clients
+ * - Continues until signal is received to stop server
+ *
+ * @throws std::runtime_error If poll() system call fails
+ * @see NewClient() for handling new connections
+ * @see NewData() for processing client data
+ */
 void Server::execute()
 {
 	while (_signalRecieved == false)
@@ -160,6 +191,22 @@ void Server::execute()
     accept --> Extracts the first pending connection from the listening socket's queue and returns a new socket file descriptor connected to the client.
     fcntl --> Sets the newly accepted client socket to non-blocking mode so that read/write operations will not block the server loop.
 */
+
+/**
+ * @brief Accepts a new client connection and creates a Client object.
+ * @return void
+ *
+ * @details Handles the complete process of accepting new connections:
+ * - Accepts incoming connection on listening socket
+ * - Sets new socket to non-blocking mode
+ * - Creates new Client instance with socket details
+ * - Adds client to monitoring list with poll()
+ * - Logs connection event for debugging
+ *
+ * @throws std::runtime_error If accept() fails or socket configuration fails
+ * @note Client begins in unregistered state and must complete authentication
+ * @see Client() constructor for initial client setup
+ */
 void Server::NewClient()
 {
 	struct sockaddr_in clientAddr;
@@ -198,6 +245,24 @@ void Server::NewClient()
  * - If there was an error → handle it the same way as a closure.
  * - If data was received → process it.
 */
+
+/**
+ * @brief Reads and processes data from an existing client connection.
+ * @param clientFd The file descriptor of the client socket to read from
+ * @return void
+ *
+ * @details Handles all aspects of client data processing:
+ * - Receives data from client socket using recv()
+ * - Detects client disconnections (recv returns 0)
+ * - Handles socket errors and removes problematic clients
+ * - Accumulates partial IRC messages in client buffer
+ * - Parses complete messages and executes IRC commands
+ * - Manages client cleanup on disconnection or errors
+ *
+ * @throws std::runtime_error If socket operations fail unexpectedly
+ * @note IRC messages may arrive in multiple packets and need buffering
+ * @see parser() for IRC message parsing logic
+ */
 void Server::NewData(int clientFd)
 {
 	char buffer[1024];
@@ -237,6 +302,25 @@ void Server::NewData(int clientFd)
 	currentClient->clearBuffer();
 }
 
+/**
+ * @brief Parses and executes IRC commands received from clients.
+ * @param command The raw IRC command string received from client
+ * @param fd The file descriptor of the client who sent the command
+ * @return void
+ *
+ * @details Implements complete IRC command processing pipeline:
+ * - Normalizes and validates command format
+ * - Splits command into tokens (command + parameters)
+ * - Converts command to uppercase for case-insensitive matching
+ * - Maps command strings to appropriate command handler objects
+ * - Executes command with proper authentication checks
+ * - Supports all IRC commands: PASS, NICK, USER, JOIN, PART, PRIVMSG, etc.
+ *
+ * @note Commands are processed through Command Pattern for maintainability
+ * @note Invalid commands are silently ignored (IRC specification)
+ * @see ICommand interface for command implementation structure
+ * @see split_cmd() for command tokenization logic
+ */
 void Server::parser(const std::string &command, int fd)
 {
 	std::string cmd = normalize_param(command, false);
@@ -278,6 +362,23 @@ void Server::parser(const std::string &command, int fd)
 
 
 // Method to split the buffer using the "\r\n" delimiter
+
+/**
+ * @brief Splits received data buffer into individual IRC commands.
+ * @param buffer The accumulated data buffer from client
+ * @return std::vector<std::string> Vector of complete IRC command strings
+ *
+ * @details Handles IRC protocol message framing:
+ * - Searches for IRC line terminators ("\\r\\n")
+ * - Extracts complete commands from accumulated buffer
+ * - Normalizes each command by removing extra whitespace
+ * - Handles partial messages that span multiple recv() calls
+ * - Returns only complete, properly terminated commands
+ *
+ * @note IRC protocol requires commands to end with \\r\\n (CRLF)
+ * @note Incomplete commands remain in client buffer for next processing
+ * @see normalize_param() for command string cleanup
+ */
 std::vector<std::string> Server::split_receivedBuffer(std::string buffer) //no neesita ser & porque no vamos a modificar el buff, solo queremos leerlo
 {
 	std::vector<std::string> commands;
@@ -299,11 +400,9 @@ std::vector<std::string> Server::split_receivedBuffer(std::string buffer) //no n
 void Server::addChannel(Channel newChannel){this->_channels.push_back(newChannel);}
 
 
-
 /*****************/
 /*    Getters    */
 /*****************/
-
 Client* Server::get_client(int fd)
 {
 	for (size_t i = 0; i < _clients.size(); i++)

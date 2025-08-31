@@ -58,7 +58,6 @@ void Channel::set_channelCreationTime()
 	std::ostringstream oss;
 	oss << _time;
 	this->_createdAt = std::string(oss.str());
-
 }
 
 /*****************/
@@ -68,7 +67,7 @@ int Channel::get_invitOnly(){return this->_inviteOnly;}
 int Channel::get_topicMode(){return this->_topic;}
 int Channel::get_keyMode(){return this->_key;}
 int Channel::get_userLimit(){return this->_limit;}
-int Channel::get_totalUsers(){return this->_clients.size() + this->_admins.size();} //antes GetClientsNumber
+int Channel::get_totalUsers(){return this->_clients.size() + this->_admins.size();}
 bool Channel::get_topicRestriction() const{return this->_topicRestriction;}
 bool Channel::get_ModeAtIndex(size_t index){return _modes[index].second;}
 bool Channel::isClientInChannel(std::string &nick){return get_clientByname(nick) != NULL;}
@@ -78,6 +77,12 @@ std::string Channel::get_password(){return this->_password;}
 std::string Channel::get_name(){return this->_name;}
 std::string Channel::get_topicModificationTime(){return this->_timeCreation;}
 std::string Channel::get_channelCreationTime(){return _createdAt;}
+
+/**
+ * @brief Gets active channel modes formatted as a mode string.
+ * @return std::string Formatted mode string (e.g., "+itk") or empty string if no modes
+ * @note Excludes 'o' (operator) mode from the result as it's handled separately
+ */
 std::string Channel::get_activeModes()
 {
 	std::string result;
@@ -91,7 +96,11 @@ std::string Channel::get_activeModes()
 	return (result);
 }
 
-std::string Channel::get_memberList() //antes clientChannel_list
+/**
+ * @brief Gets formatted list of channel members with operator prefixes.
+ * @return std::string Space-separated list with "@" prefix for operators
+ */
+std::string Channel::get_memberList()
 {
 	std::ostringstream oss;
 
@@ -133,6 +142,11 @@ Client *Channel::get_adminByFd(int fd)
 	return NULL;
 }
 
+/**
+ * @brief Finds client by nickname in both regular members and operators.
+ * @param name Nickname to search for
+ * @return Client* Pointer to client if found, NULL otherwise
+ */
 Client* Channel::get_clientByname(std::string name)
 {
 	for (std::vector<Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
@@ -160,7 +174,7 @@ void Channel::remove_client(int fd)
 	{
 		if (it->get_fd() == fd)
 		{
-			_clients.erase(it); 
+			_clients.erase(it);
 			break;
 		}
 	}
@@ -172,12 +186,19 @@ void Channel::remove_admin(int fd)
 	{
 		if (it->get_fd() == fd)
 		{
-			_admins.erase(it); 
+			_admins.erase(it);
 			break;
 		}
 	}
 }
 
+/**
+ * @brief Moves a client between two vectors (e.g., member to operator).
+ * @param from Source vector to remove client from
+ * @param to Destination vector to add client to
+ * @param nick Nickname of client to move
+ * @return bool True if client was found and moved, false otherwise
+ */
 bool Channel::moveClientBetween(std::vector<Client> &from,
 	std::vector<Client> &to, const std::string &nick)
 {
@@ -193,13 +214,21 @@ bool Channel::moveClientBetween(std::vector<Client> &from,
 	return (false);
 }
 
+/**
+ * @brief Promotes a regular member to operator status.
+ */
 bool Channel::change_clientToAdmin(std::string& nick)
 	{return moveClientBetween(_clients, _admins, nick);}
 
+/**
+ * @brief Demotes an operator to regular member status.
+ */
 bool Channel::change_adminToClient(std::string& nick)
 	{return moveClientBetween(_admins, _clients, nick);}
 
-
+/**
+ * @brief Sends message to all channel members (operators and regular members).
+ */
 void Channel::broadcast_message(std::string reply)
 {
 	for(size_t i = 0; i <_admins.size(); i++)
@@ -209,6 +238,10 @@ void Channel::broadcast_message(std::string reply)
 		_server->_sendResponse(reply, _clients[i].get_fd());
 }
 
+/**
+ * @brief Sends message to all channel members except specified file descriptor.
+ * @param fd File descriptor to exclude from broadcast
+ */
 void Channel::broadcast_messageExcept(std::string reply, int fd)
 {
 	for(size_t i = 0; i < _admins.size(); i++)

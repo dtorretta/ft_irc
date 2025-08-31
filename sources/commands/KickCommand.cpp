@@ -1,7 +1,26 @@
 #include "../../includes/core/Server.hpp"
-#include "../../includes/core/Channel.hpp"
-#include "../../includes/commands/channelCommands.hpp"
 
+/**
+ * @brief Parses KICK command parameters to extract channels, target user, and reason.
+ * @param cmd The complete KICK command string received from the client
+ * @return std::vector<std::string> Vector containing [channels, target_user, reason]
+ *
+ * @details Parses the KICK command syntax which supports kicking users from channels:
+ * - Splits the command by spaces to extract basic components
+ * - Validates minimum parameter count (requires at least channel and target user)
+ * - Extracts channel list (comma-separated for multiple channels)
+ * - Identifies the target user to be kicked
+ * - Parses optional reason message (text after ':' delimiter)
+ * - Returns a structured vector with exactly 3 elements:
+ *   - [0]: Channel names (comma-separated if multiple)
+ *   - [1]: Target username to kick
+ *   - [2]: Kick reason (empty string if no reason provided)
+ * - Example: "KICK #general,#random alice :Spamming" returns ["#general,#random", "alice", "Spamming"]
+ *
+ * @note Returns empty vector if insufficient parameters (less than 3 arguments)
+ * @note Reason defaults to empty string if not provided or ':' delimiter not found
+ * @see RFC 2812 Section 3.2.8 for KICK command syntax specifications
+ */
 std::vector<std::string> Server::SplitKICK(std::string cmd)
 {
 	std::vector<std::string> args = split_cmd(cmd);  //Output: ["KICK", "#chan1,#chan2", "migue", ":Bad", "behavior"]
@@ -15,7 +34,7 @@ std::vector<std::string> Server::SplitKICK(std::string cmd)
 	std::string target_user = args[2]; // "migue"
 	std::string reason = "";
 
-	// Parse reason (everything after ':') if there's one
+	// Parse reason
 	if (args.size() > 3)
 	{
 		size_t colon_pos = cmd.find(':');
@@ -31,6 +50,37 @@ std::vector<std::string> Server::SplitKICK(std::string cmd)
 	return (result);
 }
 
+/**
+ * @brief Handles the IRC KICK command for removing users from channels.
+ * @param cmd The complete KICK command string received from the client
+ * @param fd File descriptor of the client who sent the command
+ * @return void
+ *
+ * @details Processes the IRC KICK command which allows channel operators to remove users:
+ * - Verifies the client is registered and authenticated on the server
+ * - Retrieves the client object associated with the file descriptor
+ * - Parses command parameters using SplitKICK() to extract channels, target, and reason
+ * - Validates command format and parameter availability
+ * - Extracts individual components: channel list, target username, and optional reason
+ * - Splits comma-separated channel list into individual channels for processing
+ * - For each specified channel, performs comprehensive validation:
+ *   - Verifies the channel exists on the server
+ *   - Confirms the kicker is a member of the channel
+ *   - Ensures the kicker has operator/admin privileges
+ *   - Validates the target user is actually in the channel
+ * - Upon successful validation, executes the kick:
+ *   - Broadcasts KICK message to all channel members (except kicker)
+ *   - Includes reason in broadcast if provided, otherwise uses default format
+ *   - Removes target user from channel (handles both regular members and admins)
+ *   - Automatically removes empty channels when last user is kicked
+ * - Continues processing remaining channels even if some operations fail
+ * - Sends appropriate error responses for invalid conditions
+ *
+ * @note Only channel operators/admins can kick other users
+ * @note Supports kicking from multiple channels in a single command
+ * @note Empty channels are automatically removed after the last user is kicked
+ * @see RFC 2812 Section 3.2.8 for complete KICK command specifications
+ */
 void Server::KICK(std::string cmd, int fd)
 {
 	//1. Check if user is registered

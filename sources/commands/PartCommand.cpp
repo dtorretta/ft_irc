@@ -1,7 +1,19 @@
 #include "../../includes/core/Server.hpp"
-#include "../../includes/commands/ChannelCommands.hpp"
 
-
+/**
+ * @brief Parses PART command parameters to extract channel names.
+ * @param command The complete PART command string received from the client
+ * @return std::vector<std::string> Vector of channel names to leave
+ *
+ * @details Parses the PART command syntax which supports leaving multiple channels:
+ * - Splits the command by spaces to extract the channel list
+ * - Handles comma-separated channel lists (e.g., "#chan1,#chan2")
+ * - Returns a vector containing individual channel names
+ * - Example: "PART #chan1,#chan2 :Goodbye" returns ["#chan1", "#chan2"]
+ *
+ * @note The reason message (after ':') is not extracted by this function
+ * @see RFC 2812 Section 3.2.2 for PART command syntax specifications
+ */
 std::vector<std::string> Server::SplitPART(std::string command)
 {
 	std::vector<std::string> args = split_cmd(command);  //Output: ["PART", "#chan1,#chan2"]
@@ -17,6 +29,29 @@ std::vector<std::string> Server::SplitPART(std::string command)
 	return (channels);
 }
 
+/**
+ * @brief Handles the IRC PART command for leaving one or more channels.
+ * @param cmd The complete PART command string received from the client
+ * @param fd File descriptor of the client who sent the command
+ * @return void
+ *
+ * @details Processes the IRC PART command which allows clients to leave channels:
+ * - Verifies the client is registered and authenticated on the server
+ * - Retrieves the client object associated with the file descriptor
+ * - Parses command parameters to extract channel names using SplitPART()
+ * - Validates that at least one channel name is provided
+ * - Extracts optional reason message (text after ':' character, defaults to "Leaving")
+ * - For each specified channel:
+ *   - Verifies the channel exists on the server
+ *   - Confirms the client is actually a member of the channel
+ *   - Broadcasts PART message to all remaining channel members
+ *   - Removes the client from the channel (handles both regular members and admins)
+ * - Sends appropriate error responses for non-existent channels or membership issues
+ *
+ * @note Supports leaving multiple channels in a single command with comma separation
+ * @note Default reason "Leaving" is used if no custom reason is provided
+ * @see RFC 2812 Section 3.2.2 for complete PART command specifications
+ */
 void	Server::PART(std::string cmd, int fd)
 {
 	//1. Check if user is registered

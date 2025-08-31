@@ -1,7 +1,23 @@
 #include "../../includes/core/Server.hpp"
-#include "../../includes/commands/ChannelCommands.hpp"
 
-
+/**
+ * @brief Parses PRIVMSG command parameters to extract targets and message.
+ * @param cmd The complete PRIVMSG command string received from the client
+ * @return std::vector<std::string> Vector containing targets and message (message is last element)
+ *
+ * @details Parses the PRIVMSG command syntax which supports multiple targets:
+ * - Locates the message content after the ':' delimiter
+ * - Extracts target list before the ':' character
+ * - Handles comma-separated target lists (e.g., "alice,bob,#general")
+ * - Splits individual targets and adds them to the result vector
+ * - Appends the message content as the last element of the vector
+ * - Example: "PRIVMSG alice,#general :Hello everyone" returns ["alice", "#general", "Hello everyone"]
+ * - Returns empty vector if invalid format or no message found
+ *
+ * @note The message content is always the last element in the returned vector
+ * @note Empty targets are automatically filtered out during parsing
+ * @see RFC 2812 Section 3.3.1 for PRIVMSG command syntax specifications
+ */
 std::vector<std::string> Server::SplitPM(std::string cmd)
 {
 	// Parse message (everything after ':')
@@ -34,6 +50,34 @@ std::vector<std::string> Server::SplitPM(std::string cmd)
 	return (result);
 }
 
+/**
+ * @brief Handles the IRC PRIVMSG command for sending messages to users or channels.
+ * @param cmd The complete PRIVMSG command string received from the client
+ * @param fd File descriptor of the client who sent the command
+ * @return void
+ *
+ * @details Processes the IRC PRIVMSG command which allows clients to send messages:
+ * - Verifies the client is registered and authenticated on the server
+ * - Retrieves the client object associated with the file descriptor
+ * - Parses command parameters using SplitPM() to extract targets and message
+ * - Validates command format (minimum 1 target + 1 message required)
+ * - Extracts message content and target list from parsed parameters
+ * - Performs comprehensive validation checks:
+ *   - Ensures at least one target is specified
+ *   - Verifies message content is not empty
+ *   - Limits maximum targets to 10 per command
+ * - For each target, determines if it's a channel (starts with '#') or user:
+ *   - **Channel messages**: Validates channel existence and sender membership,
+ *     then broadcasts to all channel members except the sender
+ *   - **User messages**: Validates target user existence, then sends direct message
+ * - Continues processing remaining targets even if some fail validation
+ * - Sends appropriate error responses for invalid targets or conditions
+ *
+ * @note Supports sending to multiple targets in a single command with comma separation
+ * @note Channel names must start with '#' character to be recognized as channels
+ * @note Messages are broadcast to all channel members except the sender
+ * @see RFC 2812 Section 3.3.1 for complete PRIVMSG command specifications
+ */
 void Server::PRIVMSG(std::string cmd, int fd)
 {
 	//1. Check if user is registered

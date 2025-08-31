@@ -2,38 +2,38 @@
 
 Client::Client()
 {
-        this->_fd = -1;
-        //this->bool isOperator = false; //borrar si al final nunca lo usamos
-        this->_passRegistered = false;
-        this->_logedIn = false;
+		this->_fd = -1;
+		//this->bool isOperator = false; //borrar si al final nunca lo usamos
+		this->_passRegistered = false;
+		this->_logedIn = false;
 }
 
 Client::Client(Client const &copy)
 {
-    this->_fd = copy._fd;
-    this->_IPaddress = copy._IPaddress;
-    this->_nickname = copy._nickname;
-    this->_username = copy._username;
-    this->_buffer = copy._buffer;
-    this->_channels = copy._channels;
-    this->_cmd = copy._cmd;
-    this->_logedIn = copy._logedIn;
-    this->_passRegistered = copy._passRegistered;
+	this->_fd = copy._fd;
+	this->_IPaddress = copy._IPaddress;
+	this->_nickname = copy._nickname;
+	this->_username = copy._username;
+	this->_buffer = copy._buffer;
+	this->_channels = copy._channels;
+	this->_cmd = copy._cmd;
+	this->_logedIn = copy._logedIn;
+	this->_passRegistered = copy._passRegistered;
 }
 
 Client& Client::operator=(Client const &copy)
 {
 	if(this != &copy)
 	{
-        this->_fd = copy._fd;
-        this->_IPaddress = copy._IPaddress;
-        this->_nickname = copy._nickname;
-        this->_username = copy._username;
-        this->_buffer = copy._buffer;
-        this->_channels = copy._channels;
-        this->_cmd = copy._cmd;
-        this->_logedIn = copy._logedIn;
-        this->_passRegistered = copy._passRegistered;
+		this->_fd = copy._fd;
+		this->_IPaddress = copy._IPaddress;
+		this->_nickname = copy._nickname;
+		this->_username = copy._username;
+		this->_buffer = copy._buffer;
+		this->_channels = copy._channels;
+		this->_cmd = copy._cmd;
+		this->_logedIn = copy._logedIn;
+		this->_passRegistered = copy._passRegistered;
 	}
 	return(*this);
 }
@@ -66,11 +66,22 @@ const std::vector<std::string>& Client::get_cmd() const {return _cmd;}
 const std::vector<std::string>& Client::get_channels() const {return _channels;}
 bool Client::get_logedIn() const {return this->_logedIn;}
 bool Client::get_passRegistered() const {return this->_passRegistered;}
+
+/**
+ * @brief Creates IRC-formatted hostname string.
+ * @return std::string Formatted as "nickname!username"
+ */
 std::string Client::get_hostname() const
 {
 	std::string hostname = this->get_nickname() + "!" + this->get_username();
 	return hostname;
 }
+
+/**
+ * @brief Checks if client has an invitation to a specific channel.
+ * @param channel_name Name of channel to check invitation for
+ * @return bool True if invitation exists, false otherwise
+ */
 bool Client::get_channelInvitation(std::string &channel_name)
 {
 	for (size_t i = 0; i < this->_channels.size(); i++)
@@ -88,6 +99,11 @@ bool Client::get_channelInvitation(std::string &channel_name)
 
 void Client::clearBuffer() {_buffer.clear();}
 void Client::addChannelInvitation(std::string channel_name) {_channels.push_back(channel_name);}
+
+/**
+ * @brief Removes a specific channel invitation from client's invitation list.
+ * @param channel_name Name of channel invitation to remove
+ */
 void Client::removeChannelInvitation(std::string &channel_name)
 {
 	for (size_t i = 0; i < this->_channels.size(); i++)

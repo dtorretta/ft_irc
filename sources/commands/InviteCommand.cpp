@@ -1,7 +1,26 @@
 #include "../../includes/core/Server.hpp"
-#include "../../includes/core/Channel.hpp"
-#include "../../includes/commands/channelCommands.hpp"
 
+/**
+ * @brief Handles the IRC INVITE command to invite a user to a channel.
+ * @param cmd The complete command string received from the client
+ * @param fd File descriptor of the client who sent the command
+ * @return void
+ *
+ * @details Processes an IRC INVITE command which allows a user to invite another user
+ * to join a specific channel. The function performs multiple validation checks:
+ * - Verifies the inviting user is registered and authenticated
+ * - Validates command syntax and parameter count (expects exactly 3 arguments)
+ * - Ensures the target channel exists and starts with '#'
+ * - Confirms the inviter is a member of the channel
+ * - Checks if the invited user exists on the server
+ * - Verifies the invited user is not already in the channel
+ * - For invite-only channels, ensures the inviter has operator privileges
+ * - Checks if the channel has reached its user limit
+ *
+ * @note If all validations pass, adds the invitation to the guest's invitation list
+ * and sends appropriate messages to both the inviter and the invited user.
+ * @see RFC 2812 Section 3.2.7 for IRC INVITE command specifications
+ */
 void Server::INVITE(std::string cmd, int fd)
 {
 	//1. Check if user is registered

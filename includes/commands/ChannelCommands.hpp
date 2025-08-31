@@ -34,7 +34,11 @@ class Server;
 	void	KICK(std::string cmd, int fd); \
 	std::vector<std::string> SplitKICK(std::string cmd); \
 	/***QUIT Command***/ \
+	void	QUIT(std::string cmd, int fd); \
+	std::string	SplitQUIT(std::string cmd); \
 	/***MODE Command***/ \
 	void	MODE(std::string cmd, int fd); \
 	std::vector<std::string> SplitMODE(std::string cmd); \
-	bool	isChannelValid(Channel *channel, std::string channel_string, std::string client_nick, int fd);
+	bool	isChannelValid(Channel *channel, std::string channel_string, std::string client_nick, int fd); \
+	bool	deactivateMode(Client *client,char mode, std::string parameter, Channel *channel); \
+	bool	activateMode(Client *client, char mode, std::string parameter, Channel *channel);

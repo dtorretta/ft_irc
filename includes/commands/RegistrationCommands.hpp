@@ -17,4 +17,3 @@ class Server;
 	void NICK(std::string cmd, int fd); \
 	void USER(std::string cmd, int fd); \
 	void PASS(std::string cmd, int fd);
-

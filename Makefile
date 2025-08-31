@@ -24,15 +24,17 @@ SRC	=   sources/main.cpp \
 		sources/commands/PartCommand.cpp \
 		sources/commands/PrivmsgCommand.cpp \
 		sources/commands/TopicCommand.cpp \
-		sources/commands/ModeCommand.cpp
+		sources/commands/ModeCommand.cpp \
+		sources/commands/QuitCommand.cpp
 
 INC =   -I ./includes \
 		-I ./includes/core \
         -I ./includes/utils \
 		-I ./includes/commands
 
+OBJ_DIR = obj
 
-OBJS = $(SRC:%.cpp=%.o)
+OBJS = $(SRC:sources/%.cpp=$(OBJ_DIR)/%.o)
 
 #CPP = c++
 CPP_FLAGS = -Wall -Wextra -Werror -std=c++98
@@ -41,13 +43,18 @@ all: $(NAME)
 
 $(NAME):		$(OBJS)
 	@$(CPP) $(CPP_FLAGS) $(INC) $(OBJS) -o $(NAME)
-	@echo "\n✨ ircserv is ready.\n"
+	@echo "\n✨ IRCserv is ready.\n"
 
-%.o: %.cpp
+ $(OBJ_DIR):
+		@mkdir -p $(OBJ_DIR)
+		@mkdir -p $(dir $(OBJS))
+
+$(OBJ_DIR)/%.o: sources/%.cpp | $(OBJ_DIR)
+	@echo "Compiling $<"
 	@$(CPP) $(CPP_FLAGS) $(INC) -c -o $@ $<
 
 clean:
-	@rm -f $(OBJS)
+	@rm -rf $(OBJ_DIR)
 	@echo "\n💧 Clean done \n"
 
 fclean: clean

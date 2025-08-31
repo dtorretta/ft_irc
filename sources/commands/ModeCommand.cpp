@@ -1,9 +1,24 @@
 #include "../../includes/core/Server.hpp"
-#include "../../includes/core/Channel.hpp"
-#include "../../includes/commands/ChannelCommands.hpp"
 
-
-bool	deactivateMode(char mode, std::string parameter, Channel *channel)
+/**
+ * @brief Deactivates a specific channel mode and updates channel settings.
+ * @param mode The mode character to deactivate ('i', 't', 'k', 'o', 'l')
+ * @param parameter Additional parameter required for certain modes (password for 'k', username for 'o')
+ * @param channel Pointer to the channel object to modify
+ * @return bool True if mode was successfully deactivated, false otherwise
+ *
+ * @details Handles the deactivation of various IRC channel modes:
+ * - **'i' (invite-only)**: Removes invite-only restriction, allows anyone to join
+ * - **'t' (topic restriction)**: Removes topic restriction, allows anyone to change topic
+ * - **'k' (key/password)**: Removes channel password if provided parameter matches current password
+ * - **'o' (operator)**: Demotes specified user from operator to regular member
+ * - **'l' (user limit)**: Removes user limit restriction, sets limit to 0 (unlimited)
+ *
+ * @note For 'k' mode: parameter must match current channel password for successful removal
+ * @note For 'o' mode: specified user must exist and be an operator for successful demotion
+ * @see activateMode() for the corresponding mode activation function
+ */
+bool	Server::deactivateMode(Client *client, char mode, std::string parameter, Channel *channel)
 {
 	switch(mode)
 	{
@@ -32,11 +47,31 @@ bool	deactivateMode(char mode, std::string parameter, Channel *channel)
 			channel->set_userLimit(0); channel->set_modeAtIndex(4, false);
 			return (true);
 		default:
+			_sendResponse(ERROR_UNRECOGNIZED_MODE(client->get_nickname(), channel->get_name(), mode), client->get_fd());
 			return (false); // invalid mode
 	}
 }
 
-bool	activateMode(char mode, std::string parameter, Channel *channel)
+/**
+ * @brief Activates a specific channel mode and updates channel settings.
+ * @param mode The mode character to activate ('i', 't', 'k', 'o', 'l')
+ * @param parameter Additional parameter required for certain modes (password for 'k', username for 'o', limit for 'l')
+ * @param channel Pointer to the channel object to modify
+ * @return bool True if mode was successfully activated, false otherwise
+ *
+ * @details Handles the activation of various IRC channel modes:
+ * - **'i' (invite-only)**: Sets channel to invite-only, requires invitation to join
+ * - **'t' (topic restriction)**: Restricts topic changes to operators only
+ * - **'k' (key/password)**: Sets channel password using provided parameter
+ * - **'o' (operator)**: Promotes specified user from regular member to operator
+ * - **'l' (user limit)**: Sets maximum user limit using provided numeric parameter
+ *
+ * @note For 'k' mode: parameter becomes the new channel password
+ * @note For 'o' mode: specified user must exist and be a regular member for successful promotion
+ * @note For 'l' mode: parameter is converted to integer using atoi()
+ * @see deactivateMode() for the corresponding mode deactivation function
+ */
+bool	Server::activateMode(Client *client, char mode, std::string parameter, Channel *channel)
 {
 	switch(mode)
 	{
@@ -60,10 +95,31 @@ bool	activateMode(char mode, std::string parameter, Channel *channel)
 			channel->set_userLimit(atoi(parameter.c_str())); channel->set_modeAtIndex(4, true);
 			return (true);
 		default:
+			_sendResponse(ERROR_UNRECOGNIZED_MODE(client->get_nickname(), channel->get_name(), mode), client->get_fd());
 			return (false); // invalid mode
 	}
 }
 
+/**
+ * @brief Validates channel existence, membership, and operator privileges for mode operations.
+ * @param channel Pointer to the channel object to validate (may be NULL)
+ * @param channel_string The channel name string for error reporting
+ * @param client_nick The nickname of the client requesting mode changes
+ * @param fd File descriptor of the client for sending error responses
+ * @return bool True if all validations pass, false if any validation fails
+ *
+ * @details Performs comprehensive validation checks required for mode operations:
+ * - **Channel existence**: Verifies the channel exists on the server
+ * - **Membership verification**: Confirms the client is a member of the channel
+ * - **Operator privileges**: Ensures the client has operator/admin status
+ * - Sends appropriate error responses for each type of validation failure
+ * - Used as a prerequisite check before allowing any mode modifications
+ *
+ * @note Sends ERROR_CHANNEL_NOT_EXISTS if channel doesn't exist
+ * @note Sends ERROR_NOT_IN_CHANNEL if client is not a channel member
+ * @note Sends ERROR_NOT_CHANNEL_OP if client lacks operator privileges
+ * @see MODE() command for usage context
+ */
 bool	Server::isChannelValid(Channel *channel, std::string channel_string, std::string client_nick, int fd)
 {
 	if (!channel)
@@ -84,6 +140,23 @@ bool	Server::isChannelValid(Channel *channel, std::string channel_string, std::s
 	return (true);
 }
 
+/**
+ * @brief Determines if a specific mode requires an additional parameter.
+ * @param mode The mode character to check ('i', 't', 'k', 'o', 'l')
+ * @param operation The operation type ('+' for activation, '-' for deactivation)
+ * @return bool True if the mode requires a parameter, false otherwise
+ *
+ * @details Determines parameter requirements for different IRC channel modes:
+ * - **'k' (key/password)**: Always requires parameter (password) for both + and -
+ * - **'o' (operator)**: Always requires parameter (username) for both + and -
+ * - **'l' (user limit)**: Only requires parameter for '+' operation (limit number)
+ * - **'i' (invite-only)**: Never requires parameter
+ * - **'t' (topic restriction)**: Never requires parameter
+ *
+ * @note Used during mode string parsing to determine parameter consumption
+ * @note Critical for proper command validation and error handling
+ * @see processModeString() for usage in mode parsing logic
+ */
 bool	needsParameter(char mode, char operation)
 {
 	if (mode == 'k' || mode == 'o')
@@ -94,6 +167,33 @@ bool	needsParameter(char mode, char operation)
 		return (false);
 }
 
+/**
+ * @brief Processes a mode string and associates parameters with modes that require them.
+ * @param modeString The mode string containing operations and modes (e.g., "+oi-t+k")
+ * @param parameters Reference to vector of parameters for modes that require them
+ * @return std::vector<std::string> Vector of processed mode operations with parameters
+ *
+ * @details Parses complex mode strings and creates individual mode operations:
+ * - Tracks current operation sign ('+' or '-') as it processes characters
+ * - For each mode character, creates an operation string with current sign
+ * - Consumes parameters from the parameter vector for modes that require them
+ * - Associates parameters with their corresponding mode operations
+ * - Returns empty vector if insufficient parameters are provided
+ *
+ * **Processing Logic**:
+ * - '+' or '-' characters update the current operation sign
+ * - Mode characters create operation strings like "+o", "-k", "+l"
+ * - Parameter-requiring modes consume next available parameter
+ * - Final operations include parameters: "+o alice", "+k password", "+l 50"
+ *
+ * **Example**:
+ * - Input: "+oi-t+k", parameters: ["alice", "password"]
+ * - Output: ["+o alice", "+i", "-t", "+k password"]
+ *
+ * @note Parameter index automatically advances for modes requiring parameters
+ * @note Returns empty vector if not enough parameters for parameter-requiring modes
+ * @see needsParameter() to determine which modes require parameters
+ */
 std::vector<std::string> processModeString(const std::string &modeString,
 	std::vector<std::string> &parameters)
 {
@@ -127,6 +227,32 @@ std::vector<std::string> processModeString(const std::string &modeString,
 	return (result);
 }
 
+/**
+ * @brief Parses MODE command parameters to extract channel, mode string, and parameters.
+ * @param cmd The complete MODE command string received from the client
+ * @return std::vector<std::string> Vector containing [channel, mode_string, param1, param2, ...]
+ *
+ * @details Parses the MODE command syntax which supports complex mode operations:
+ * - Splits the command by spaces to extract basic components
+ * - Validates minimum parameter count (requires at least channel name)
+ * - Handles mode viewing (channel only) and mode setting operations
+ * - Separates mode strings (starting with '+' or '-') from parameters
+ * - Consolidates multiple mode strings into a single mode string
+ * - Preserves parameter order for proper association with modes
+ *
+ * **Return Structure**:
+ * - **View mode**: ["#channel", ""] - for viewing current modes
+ * - **Set mode**: ["#channel", "+oi-t+k", "alice", "password"] - for setting modes
+ *
+ * **Examples**:
+ * - "MODE #general" returns ["#general", ""]
+ * - "MODE #general +o alice" returns ["#general", "+o", "alice"]
+ * - "MODE #general +oi alice +k password" returns ["#general", "+oi+k", "alice", "password"]
+ *
+ * @note Mode strings are concatenated if multiple are provided
+ * @note Parameters maintain their original order for proper mode association
+ * @see RFC 2812 Section 3.2.3 for MODE command syntax specifications
+ */
 std::vector<std::string>	Server::SplitMODE(std::string cmd)
 {
 	std::vector<std::string> args = split_cmd(cmd); //Output: ["MODE", "#chan1", "+o", "alice", "-o", "bob", "+l", "50"]
@@ -157,6 +283,45 @@ std::vector<std::string>	Server::SplitMODE(std::string cmd)
 	return (result); // ["#chan1", "+o-o+l", "alice", "bob", "50"]
 }
 
+/**
+ * @brief Handles the IRC MODE command for viewing or modifying channel modes.
+ * @param cmd The complete MODE command string received from the client
+ * @param fd File descriptor of the client who sent the command
+ * @return void
+ *
+ * @details Processes the IRC MODE command which supports both mode viewing and modification:
+ * - Verifies the client is registered and authenticated on the server
+ * - Retrieves the client object associated with the file descriptor
+ * - Parses command parameters using SplitMODE() to extract channel and mode operations
+ * - Validates command format and parameter availability
+ * - Operates in two distinct modes based on parameter count:
+ *
+ * **Mode VIEWING** (channel only):
+ *   - Validates channel existence and user permissions
+ *   - Sends current active modes to the requesting client
+ *   - Includes channel creation timestamp information
+ *
+ * **Mode MODIFICATION** (channel + mode string + parameters):
+ *   - Processes complex mode strings using processModeString()
+ *   - Validates channel permissions (requires operator status)
+ *   - Applies each mode operation using activateMode()/deactivateMode()
+ *   - Tracks successful operations for broadcasting
+ *   - Builds result strings for successful mode changes and parameters
+ *   - Broadcasts mode changes to all channel members
+ *   - Handles parameter association for modes requiring additional data
+ *
+ * **Supported Modes**:
+ * - **i**: Invite-only channel
+ * - **t**: Topic restriction (ops only)
+ * - **k**: Channel key/password
+ * - **o**: Operator privileges
+ * - **l**: User limit
+ *
+ * @note Only successful mode changes are included in broadcast messages
+ * @note Failed operations are silently ignored to continue processing remaining modes
+ * @note Operator privileges are required for all mode modifications
+ * @see RFC 2812 Section 3.2.3 for complete MODE command specifications
+ */
 void	Server::MODE(std::string cmd, int fd)
 {
 	//1. Check if user is registered
@@ -221,9 +386,9 @@ void	Server::MODE(std::string cmd, int fd)
 
 				bool success = false;
 				if (operations[i][0] == '+')
-					success = activateMode(mode, parameter, channel);
+					success = activateMode(client, mode, parameter, channel);
 				else
-					success = deactivateMode(mode, parameter, channel);
+					success = deactivateMode(client, mode, parameter, channel);
 
 				if (success)
 				{

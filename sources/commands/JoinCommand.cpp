@@ -1,7 +1,20 @@
 #include "../../includes/core/Server.hpp"
-#include "../../includes/core/Channel.hpp"
-#include "../../includes/commands/ChannelCommands.hpp"
 
+/**
+ * @brief Parses JOIN command parameters into channel-key pairs.
+ * @param cmd The complete JOIN command string received from the client
+ * @return std::vector<std::pair<std::string, std::string>> Vector of channel-key pairs
+ *
+ * @details Parses the JOIN command syntax which supports multiple channels and keys:
+ * - Splits the command by spaces to extract channels and keys
+ * - Handles comma-separated channel lists (e.g., "#chan1,#chan2")
+ * - Handles comma-separated key lists (e.g., "key1,key2")
+ * - Pairs each channel with its corresponding key (empty string if no key)
+ * - Example: "JOIN #chan1,#chan2 key1,key2" returns [{"#chan1","key1"}, {"#chan2","key2"}]
+ *
+ * @note Keys are optional and will be paired with channels by index order
+ * @see RFC 2812 Section 3.2.1 for JOIN command syntax specifications
+ */
 std::vector<std::pair<std::string, std::string> > Server::SplitJOIN(std::string cmd)
 {
 	// Split by spaces
@@ -41,6 +54,28 @@ std::vector<std::pair<std::string, std::string> > Server::SplitJOIN(std::string 
 	return (result);
 }
 
+/**
+ * @brief Handles joining an existing channel with validation checks.
+ * @param channel Pointer to the existing channel object
+ * @param client Pointer to the client attempting to join
+ * @param fd File descriptor of the client
+ * @param key Channel password/key provided by the client
+ * @param name Name of the channel being joined
+ * @return void
+ *
+ * @details Processes a client's request to join an existing channel with comprehensive validation:
+ * - Checks if the user is already in the channel (prevents duplicate joins)
+ * - Validates user channel limit (maximum 10 channels per user)
+ * - Verifies channel password if the channel is password-protected
+ * - Handles invite-only channels by checking invitation status
+ * - Enforces user limit restrictions for channels with limits enabled
+ * - Adds the client to the channel upon successful validation
+ * - Broadcasts JOIN message to all channel members
+ * - Sends names list and topic information to the joining client
+ *
+ * @note Automatically removes invitation after successful join to invite-only channel
+ * @see Channel modes: 'i' (invite-only) at index 0, 'l' (user limit) at index 4
+ */
 void	Server::Channel_Exist(Channel *channel, Client *client, int fd, std::string key, std::string name)
 {
 	// Check if user is already in the channel
@@ -101,6 +136,27 @@ void	Server::Channel_Exist(Channel *channel, Client *client, int fd, std::string
 		_sendResponse(MSG_CHANNEL_TOPIC(client->get_nickname(), name, channel->get_topicName()), fd);
 }
 
+/**
+ * @brief Creates and joins a new channel when it doesn't exist.
+ * @param channel_name Name of the new channel to be created
+ * @param client Pointer to the client who will become the channel operator
+ * @param fd File descriptor of the client
+ * @return void
+ *
+ * @details Handles the creation of a new channel when a client attempts to join
+ * a channel that doesn't exist on the server:
+ * - Creates a new Channel object with the specified name
+ * - Sets the server reference for the new channel
+ * - Records the channel creation timestamp
+ * - Automatically makes the creating client a channel administrator/operator
+ * - Adds the new channel to the server's channel list
+ * - Broadcasts JOIN message to notify the client
+ * - Sends names list showing the client as the only member
+ * - Sends topic information if a topic exists (typically empty for new channels)
+ *
+ * @note The first user to join a non-existent channel automatically becomes its operator
+ * @see RFC 2812 Section 1.3 for channel creation behavior
+ */
 void	Server::Channel_Not_Exist(std::string channel_name, Client *client, int fd)
 {
 	Channel new_channel;
@@ -125,6 +181,26 @@ void	Server::Channel_Not_Exist(std::string channel_name, Client *client, int fd)
 		_sendResponse(MSG_CHANNEL_TOPIC(client->get_nickname(), channel_name, channel->get_topicName()), fd);
 }
 
+/**
+ * @brief Handles the IRC JOIN command for joining one or more channels.
+ * @param cmd The complete JOIN command string received from the client
+ * @param fd File descriptor of the client who sent the command
+ * @return void
+ *
+ * @details Processes the IRC JOIN command which allows clients to join channels:
+ * - Verifies the client is registered and authenticated on the server
+ * - Retrieves the client object associated with the file descriptor
+ * - Parses command parameters to extract channel names and optional keys
+ * - Validates parameter count (minimum 1, maximum 10 channels per command)
+ * - Ensures all channel names start with '#' character (valid channel format)
+ * - For each requested channel, determines if it exists or needs to be created
+ * - Calls Channel_Exist() for existing channels with validation checks
+ * - Calls Channel_Not_Exist() for new channels that need to be created
+ * - Sends appropriate error responses for invalid requests
+ *
+ * @note Supports joining multiple channels in a single command with comma separation
+ * @see RFC 2812 Section 3.2.1 for complete JOIN command specifications
+ */
 void	Server::JOIN(std::string cmd, int fd)
 {
 	//1. Check if user is registered

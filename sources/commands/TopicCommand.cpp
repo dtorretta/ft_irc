@@ -1,7 +1,18 @@
 #include "../../includes/core/Server.hpp"
-#include "../../includes/commands/channelCommands.hpp"
 
-
+/**
+ * @brief Gets the current system time formatted as HH:MM:SS.
+ * @return std::string Current time in "hour:minute:second" format
+ *
+ * @details Utility function that retrieves the current system time and formats it:
+ * - Uses std::time(0) to get current timestamp
+ * - Converts to local time using std::localtime()
+ * - Formats as "HH:MM:SS" string using stringstream
+ * - Used primarily for timestamping topic modifications
+ *
+ * @note Returns time in 24-hour format without leading zeros
+ * @see Used by TOPIC command to timestamp topic changes
+ */
 std::string	getCurrentTime()
 {
 	std::time_t now = std::time(0);
@@ -13,6 +24,26 @@ std::string	getCurrentTime()
 	return (ss.str());
 }
 
+/**
+ * @brief Parses TOPIC command parameters to extract channel and optional topic message.
+ * @param cmd The complete TOPIC command string received from the client
+ * @return std::vector<std::string> Vector containing [channel] or [channel, topic_message]
+ *
+ * @details Parses the TOPIC command syntax which supports both viewing and setting topics:
+ * - Splits the command by spaces to extract basic components
+ * - Identifies the target channel from the second argument
+ * - Detects presence of ':' delimiter indicating topic message
+ * - If ':' found, extracts everything after it as the new topic message
+ * - Returns structured vector with 1 or 2 elements:
+ *   - **View mode**: [channel] - for viewing current topic
+ *   - **Set mode**: [channel, topic_message] - for setting new topic
+ * - Examples:
+ *   - "TOPIC #general" returns ["#general"] (view mode)
+ *   - "TOPIC #general :Welcome to our channel" returns ["#general", "Welcome to our channel"] (set mode)
+ *
+ * @note Topic message can be empty string if ':' is present but no text follows
+ * @see RFC 2812 Section 3.2.4 for TOPIC command syntax specifications
+ */
 std::vector<std::string>	Server::SplitTopic(std::string cmd)
 {
 	std::vector<std::string> result;
@@ -36,6 +67,40 @@ std::vector<std::string>	Server::SplitTopic(std::string cmd)
 	return (result);
 }
 
+/**
+ * @brief Handles the IRC TOPIC command for viewing or setting channel topics.
+ * @param cmd The complete TOPIC command string received from the client
+ * @param fd File descriptor of the client who sent the command
+ * @return void
+ *
+ * @details Processes the IRC TOPIC command which supports both topic viewing and modification:
+ * - Verifies the client is registered and authenticated on the server
+ * - Retrieves the client object associated with the file descriptor
+ * - Parses command parameters using SplitTopic() to extract channel and optional topic
+ * - Validates command format and channel name (must start with '#')
+ * - Performs comprehensive validation:
+ *   - Ensures the target channel exists on the server
+ *   - Confirms the client is a member of the channel
+ * - Operates in two distinct modes based on parameter count:
+ *
+ * **Topic SET mode** (2 parameters: channel + topic):
+ *   - Checks topic restriction mode and operator privileges if required
+ *   - Updates channel topic with new message
+ *   - Records modification timestamp using getCurrentTime()
+ *   - Sets topic creator to the requesting client
+ *   - Broadcasts topic change to all channel members except setter
+ *   - Sends topic metadata (who set it and when) to channel members
+ *
+ * **Topic VIEW mode** (1 parameter: channel only):
+ *   - Checks if channel has a topic set
+ *   - Sends current topic to requesting client if one exists
+ *   - Includes topic metadata (creator and modification time)
+ *   - Sends "no topic set" message if channel has no topic
+ *
+ * @note Topic restrictions ('t' mode) require operator privileges to modify topics
+ * @note All topic changes are timestamped and attributed to the setting user
+ * @see RFC 2812 Section 3.2.4 for complete TOPIC command specifications
+ */
 void  Server::TOPIC(std::string cmd, int fd)
 {
 	//1. Check if user is registered
