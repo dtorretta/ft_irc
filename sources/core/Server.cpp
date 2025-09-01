@@ -70,33 +70,27 @@ Server::~Server()
 /*     Methods    */
 /******************/
 
-/*
- * Initializes the server by creating the socket that will listen for incoming connections (socket)
- * Configures the socket to avoid problems when restarting and to make it non-blocking (setsockopt & fcntl)
- * Defines the address and port where the server will accept connections (sockaddr_in addr)
- * Binds the socket to that address and puts it into listening mode (bind & listen)
- * Finally, creates a new node, with the necessary configuration, to add it to _fds (pollfd listenPollFd)
-	socket --> creates a new TCP IPv4 socket. Its return value is a fd. This socket is the entry point for clients
-	setsockopt --> to avoid “Address already in use” error when quickly restarting the server
-	fcntl --> changes the socket mode so that read/write operations do not block the process
-	sockaddr_in addr --> struct used to indicate the IP address and port where the socket will listen
-	bind --> associates the socket with the IP address and port set in the addr struct
-	listen --> puts the socket into listening mode for incoming connections
-*/
-
 /**
- * @brief Initializes the server socket and prepares it for listening.
+ * @brief Initializes the server socket and prepares it for listening incoming connections (socket).
  * @return void
  *
  * @details Creates and configures the TCP listening socket:
  * - Creates TCP IPv4 socket for incoming connections
- * - Sets SO_REUSEADDR to avoid "Address already in use" errors
- * - Configures non-blocking mode for accept() operations
- * - Binds socket to specified port on all interfaces
- * - Starts listening for incoming connections
- * - Adds listening socket to poll monitoring array
+ * - Sets SO_REUSEADDR to avoid "Address already in use" errors (setsockopt)
+ * - Configures non-blocking mode for accept() operations (fcntl)
+ * - Binds socket to specified port on all interfaces (bind)
+ * - Starts listening for incoming connections (listen)
+ * - Defines the address and port where the server will accept connections (sockaddr_in addr)
+ * - Adds listening socket to poll monitoring array (pollfd listenPollFd)
  *
  * @throws std::runtime_error If socket creation, configuration, or binding fails
+ * @note 
+ *	socket --> creates a new TCP IPv4 socket. Its return value is a fd. This socket is the entry point for clients
+ *	setsockopt --> to avoid “Address already in use” error when quickly restarting the server
+ *	fcntl --> changes the socket mode so that read/write operations do not block the process
+ *	sockaddr_in addr --> struct used to indicate the IP address and port where the socket will listen
+ *	bind --> associates the socket with the IP address and port set in the addr struct
+ *	listen --> puts the socket into listening mode for incoming connections
  * @see execute() for the main server loop that uses this socket
  */
 void Server::init()
@@ -139,13 +133,6 @@ void Server::init()
 	_fds.push_back(listenPollFd);
 }
 
-/*
- * In the main loop, you call poll(), which blocks until one of the sockets (included in _fds) has activity.
- * When poll() returns, you check the 'revents' field of each pollfd to know which sockets are “ready” to operate:
- *      - If it is the listening socket with POLLIN, there is a new client trying to connect.
- *      - If it is a client socket with POLLIN, that client has sent data you can read.
-*/
-
 /**
  * @brief Main server execution loop using poll() for handling multiple clients.
  * @return void
@@ -183,28 +170,23 @@ void Server::execute()
 	}
 }
 
-/*
- * Accepts a new incoming connection from the listening socket and prepares it to be handled by the server (accept)
- * Sets the socket to non-blocking mode (fcntl)
- * Creates and configures a new node of the pollfd struct to add it to _fds, so _fds can monitor this new client (pollfd newClientPollFd)
-
-    accept --> Extracts the first pending connection from the listening socket's queue and returns a new socket file descriptor connected to the client.
-    fcntl --> Sets the newly accepted client socket to non-blocking mode so that read/write operations will not block the server loop.
-*/
-
 /**
  * @brief Accepts a new client connection and creates a Client object.
  * @return void
  *
  * @details Handles the complete process of accepting new connections:
- * - Accepts incoming connection on listening socket
- * - Sets new socket to non-blocking mode
- * - Creates new Client instance with socket details
+ * - Accepts incoming connection on listening socket (accept)
+ * - Sets new socket to non-blocking mode (fcntl)
+ * - Creates new node of the pollfd struct for the new Client instance with socket details
  * - Adds client to monitoring list with poll()
  * - Logs connection event for debugging
  *
  * @throws std::runtime_error If accept() fails or socket configuration fails
  * @note Client begins in unregistered state and must complete authentication
+ * - accept --> Extracts the first pending connection from the listening socket's queue and 
+ *              returns a new socket file descriptor connected to the client.
+ * - fcntl --> Sets the newly accepted client socket to non-blocking mode so that read/write 
+ *             operations will not block the server loop.
  * @see Client() constructor for initial client setup
  */
 void Server::NewClient()
@@ -236,25 +218,15 @@ void Server::NewClient()
 	std::cout << YELLOW << "Client connected: fd " << clientSocket << RESET << std::endl;
 }
 
-/*
- * Basically, this will be the function that reads data from an existing socket and decides what to do with it.
- * The general logic of NewData() in a server using poll() is:
- *
- * - Receive data from the socket (recv() or read()).
- * - If the client closed the connection (recv returns 0) → close the socket and remove it from _fds.
- * - If there was an error → handle it the same way as a closure.
- * - If data was received → process it.
-*/
-
 /**
- * @brief Reads and processes data from an existing client connection.
+ * @brief Reads and processes data from an existing client connection and decides what to do with it.
  * @param clientFd The file descriptor of the client socket to read from
  * @return void
  *
  * @details Handles all aspects of client data processing:
  * - Receives data from client socket using recv()
  * - Detects client disconnections (recv returns 0)
- * - Handles socket errors and removes problematic clients
+ * - Handles socket errors and close the socket and remove it from _fds.
  * - Accumulates partial IRC messages in client buffer
  * - Parses complete messages and executes IRC commands
  * - Manages client cleanup on disconnection or errors
@@ -379,7 +351,7 @@ void Server::parser(const std::string &command, int fd)
  * @note Incomplete commands remain in client buffer for next processing
  * @see normalize_param() for command string cleanup
  */
-std::vector<std::string> Server::split_receivedBuffer(std::string buffer) //no neesita ser & porque no vamos a modificar el buff, solo queremos leerlo
+std::vector<std::string> Server::split_receivedBuffer(std::string buffer)
 {
 	std::vector<std::string> commands;
 	std::string line;

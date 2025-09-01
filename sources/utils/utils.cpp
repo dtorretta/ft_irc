@@ -50,9 +50,6 @@ void Server::_sendResponse(std::string response, int fd)
 		std::cerr << "Response send() failed" << std::endl;
 }
 
-
-//Trim spaces at the beginning and end. Additionally, when 'flag' is true, remove the leading ':'
-
 /**
  * @brief Normalizes IRC command parameters by trimming whitespace and removing prefix colon.
  * @param s The parameter string to normalize
@@ -89,8 +86,6 @@ std::string Server::normalize_param(const std::string &s, bool flag)
 	}
 	return result;
 }
-
-//splits the string with the whole command (ex: "PRIVMSG #general :Hello, world!") in different strings
 
 /**
  * @brief Splits IRC command string into individual tokens for parsing.

@@ -5,15 +5,15 @@
 #include <map>
 #include <sstream>
 #include <cstdlib>
-#include <unistd.h> // para close()
-#include <fcntl.h>  // para fcntl, F_SETFL, O_NONBLOCK
-#include <cstring> //memset
-#include <string> //trim
-#include <csignal> //signals
+#include <unistd.h>
+#include <fcntl.h>
+#include <cstring>
+#include <string>
+#include <csignal>
 #include <poll.h>
-#include <netinet/in.h>  // para sockaddr_in en Unix/Linux/macOS
-#include <sys/socket.h>  // para funciones socket(), bind(), listen(), etc.
-#include <arpa/inet.h>   // para funciones como htons()
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 #include "Client.hpp"
 #include "Channel.hpp"
