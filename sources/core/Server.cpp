@@ -11,7 +11,7 @@ Server::Server(int port, std::string pass)
 	_registrationCommands["NICK"] = &Server::NICK;
 	_registrationCommands["USER"] = &Server::USER;
 	_registrationCommands["PASS"] = &Server::PASS;
-	_channelCommands["QUIT"] = &Server::QUIT;
+	_registrationCommands["QUIT"] = &Server::QUIT;
 	_channelCommands["JOIN"] = &Server::JOIN;
 	_channelCommands["PART"] = &Server::PART;
 	_channelCommands["PRIVMSG"] = &Server::PRIVMSG;
@@ -167,6 +167,18 @@ void Server::execute()
 					NewData(_fds[i].fd);
 			}
 		}
+			
+		// Procesar clientes marcados para QUIT
+		std::vector<Client>::iterator it;
+		for(it = _clients.begin(); it != _clients.end(); it++)
+		{	
+		    if (it->get_isQuitting())
+		    {
+		        ft_close(it->get_fd());              
+		        std::cout << YELLOW << "Client fd " << it->get_fd() << " disconnected\n" << RESET;
+		        break;
+		    }
+		}
 	}
 }
 
@@ -255,9 +267,9 @@ void Server::NewData(int clientFd)
 
 	//1. Accumulate the received data in the client’s private buffer, DO NOT overwrite
 	currentClient->set_buffer(buffer);
-
 	const std::string& accumulatedBuffer = currentClient->get_buffer();
-
+	//std::cout << "DEBUG: Accumulated buffer for fd " << clientFd << ": " << GREEN << accumulatedBuffer << RESET << std::endl; //💡 to test fragmented commands
+	
 	//2. Check if the accumulated buffer contains one or more complete commands ending with \r\n
 	if (accumulatedBuffer.find("\r\n") == std::string::npos)
 		return; //If not found, return to poll() to wait for more data; it is not the end of the IRC command.
@@ -315,7 +327,7 @@ void Server::parser(const std::string &command, int fd)
 		(this->*handler)(cmd, fd);
 		return;
 	}
-
+		
 	//3. Check if the user is registered for channel commands and is logged in
 	if (isregistered(fd) && get_client(fd)->get_logedIn())
 	{

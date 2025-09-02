@@ -6,6 +6,7 @@ Client::Client()
 		//this->bool isOperator = false; //borrar si al final nunca lo usamos
 		this->_passRegistered = false;
 		this->_logedIn = false;
+		this->_isQuitting = false;
 }
 
 Client::Client(Client const &copy)
@@ -19,6 +20,7 @@ Client::Client(Client const &copy)
 	this->_cmd = copy._cmd;
 	this->_logedIn = copy._logedIn;
 	this->_passRegistered = copy._passRegistered;
+	this->_isQuitting = copy._isQuitting;
 }
 
 Client& Client::operator=(Client const &copy)
@@ -34,6 +36,7 @@ Client& Client::operator=(Client const &copy)
 		this->_cmd = copy._cmd;
 		this->_logedIn = copy._logedIn;
 		this->_passRegistered = copy._passRegistered;
+		this->_isQuitting = copy._isQuitting;
 	}
 	return(*this);
 }
@@ -52,6 +55,7 @@ void Client::set_buffer(const std::string& chunk){_buffer += chunk;}
 void Client::set_cmd(const std::vector<std::string>& cmds){_cmd = cmds;}
 void Client::set_passRegistered(const bool value){_passRegistered = value;}
 void Client::set_logedIn(const bool value){_logedIn = value;}
+void Client::set_isQuitting(const bool value){_isQuitting = value;}
 
 
 /*****************/
@@ -65,6 +69,7 @@ const std::string& Client::get_buffer() const {return _buffer;}
 const std::vector<std::string>& Client::get_cmd() const {return _cmd;}
 const std::vector<std::string>& Client::get_channels() const {return _channels;}
 bool Client::get_logedIn() const {return this->_logedIn;}
+bool Client::get_isQuitting() const {return this->_isQuitting;}
 bool Client::get_passRegistered() const {return this->_passRegistered;}
 
 /**

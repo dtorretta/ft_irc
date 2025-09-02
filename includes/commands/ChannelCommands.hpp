@@ -33,9 +33,6 @@ class Server;
 	/***KICK Command***/ \
 	void	KICK(std::string cmd, int fd); \
 	std::vector<std::string> SplitKICK(std::string cmd); \
-	/***QUIT Command***/ \
-	void	QUIT(std::string cmd, int fd); \
-	std::string	SplitQUIT(std::string cmd); \
 	/***MODE Command***/ \
 	void	MODE(std::string cmd, int fd); \
 	std::vector<std::string> SplitMODE(std::string cmd); \

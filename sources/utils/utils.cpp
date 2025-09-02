@@ -1,5 +1,7 @@
 #include "../../includes/core/Server.hpp"
 
+extern Server* g_server; 
+
 /**
  * @brief Signal handler for graceful server shutdown.
  * @param sig The signal number received (unused but required by signal handler interface)
@@ -46,8 +48,10 @@ bool Server::isregistered(int fd)
  */
 void Server::_sendResponse(std::string response, int fd)
 {
-	if(send(fd, response.c_str(), response.size(), 0) == -1)
-		std::cerr << "Response send() failed" << std::endl;
+	std::string colored = YELLOW + response + RESET;
+	
+	if(send(fd, colored.c_str(), colored.size(), 0) == -1)
+		std::cerr << RED << "Response send() failed" << RESET << std::endl;
 }
 
 /**
@@ -200,7 +204,6 @@ void Server::RemoveFd(int Fd)
 			break;
 		}
 	}
-	this->_listeningSocket = -1;
 }
 
 /**

@@ -18,6 +18,7 @@ class Client
 		std::vector<std::string> _cmd;
 		bool _logedIn; // Se usa???
 		bool _passRegistered;
+		bool _isQuitting;
 
 		//bool isOperator; //borrar si al final no la usamos
 
@@ -41,6 +42,7 @@ class Client
 		bool get_logedIn() const;
 		bool get_passRegistered() const;
 		bool get_channelInvitation(std::string &channel_name);
+		bool get_isQuitting() const;
 
 
 		/******************/
@@ -54,6 +56,7 @@ class Client
 		void set_cmd(const std::vector<std::string>& cmds);
 		void set_passRegistered(const bool value);
 		void set_logedIn(const bool value);
+		void set_isQuitting(const bool value);
 
 		/******************/
 		/*      Utils     */

@@ -78,7 +78,7 @@ void	Server::QUIT(std::string cmd, int fd)
 	//1. Check if user is registered
 	if (!isregistered(fd))
 	{
-		_sendResponse(ERROR_NOT_REGISTERED_YET(std::string("*")), fd);
+		get_client(fd)->set_isQuitting(true); //new
 		return ;
 	}
 

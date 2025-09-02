@@ -38,15 +38,15 @@ int main (int ac, char** av)
         
         printBanner();
         
+        Server newServer(std::atoi(av[1]), std::string(av[2]));
+         
         //Signals
         std::signal(SIGINT, Server::signalHandler); // Ctrl+C
         std::signal(SIGTERM, Server::signalHandler); //kill -TERM <pid>
         std::signal(SIGQUIT, SIG_IGN); // ignore Ctrl + back slash  
-        std::signal(SIGTSTP, SIG_IGN); // ignore Ctrl + Z   
+        //std::signal(SIGTSTP, SIG_IGN); // ignore Ctrl + Z   
 
-        Server newServer(std::atoi(av[1]), std::string(av[2]));
-        newServer.init();
-        
+        newServer.init();        
         std::cout << YELLOW << "Waiting for a client to get connected..." << RESET << std::endl;
         newServer.execute();
     }

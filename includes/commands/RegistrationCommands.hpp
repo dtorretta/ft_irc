@@ -16,4 +16,6 @@ class Server;
 #define REGISTRATION_COMMAND_METHODS \
 	void NICK(std::string cmd, int fd); \
 	void USER(std::string cmd, int fd); \
-	void PASS(std::string cmd, int fd);
+	void PASS(std::string cmd, int fd); \
+	void QUIT(std::string cmd, int fd); \
+	std::string	SplitQUIT(std::string cmd); 
