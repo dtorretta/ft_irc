@@ -1,6 +1,6 @@
 #include "../../includes/core/Server.hpp"
 
-extern Server* g_server; 
+extern Server* g_server;
 
 /**
  * @brief Signal handler for graceful server shutdown.
@@ -49,7 +49,7 @@ bool Server::isregistered(int fd)
 void Server::_sendResponse(std::string response, int fd)
 {
 	std::string colored = YELLOW + response + RESET;
-	
+
 	if(send(fd, colored.c_str(), colored.size(), 0) == -1)
 		std::cerr << RED << "Response send() failed" << RESET << std::endl;
 }
@@ -227,16 +227,15 @@ void Server::RemoveClientFromChannel(int fd)
 {
 	for (size_t i = 0; i < this->_channels.size(); i++)
 	{
-		int flag = 0;
 		if (_channels[i].get_clientByFd(fd))
-			{_channels[i].remove_client(fd); flag = 1;}
+			_channels[i].remove_client(fd);
 		else if (_channels[i].get_adminByFd(fd))
-			{_channels[i].remove_admin(fd); flag = 1;}
+			_channels[i].remove_admin(fd);
 		if (_channels[i].get_totalUsers() == 0)
-			{_channels.erase(_channels.begin() + i); i--; continue;}
-		if (flag){
-			std::string rpl = ":" + get_client(fd)->get_nickname() + "!~" + get_client(fd)->get_username() + "@localhost QUIT Quit\r\n";
-			_channels[i].broadcast_message(rpl); //deberia no incluir al que lo emitio?
+		{
+			_channels.erase(_channels.begin() + i);
+			i--;
+			continue;
 		}
 	}
 }

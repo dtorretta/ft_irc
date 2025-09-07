@@ -13,7 +13,7 @@
  * @note Returns time in 24-hour format without leading zeros
  * @see Used by TOPIC command to timestamp topic changes
  */
-std::string	getCurrentTime()
+std::string	Server::getCurrentTime()
 {
 	std::time_t now = std::time(0);
 	std::tm *timeinfo = std::localtime(&now);
@@ -50,6 +50,10 @@ std::vector<std::string>	Server::SplitTopic(std::string cmd)
 
 	// Split by spaces
 	std::vector<std::string> args = split_cmd(cmd); //Output: ["TOPIC", "#chan1, ":message"]
+
+	if (args.size() < 3)
+		return (std::vector<std::string>());
+
 	std::string channel = args[1]; // "#chan1"
 
 	// Parse message (everything after ':')

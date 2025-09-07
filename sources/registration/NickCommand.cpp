@@ -98,12 +98,17 @@ void Server::NICK(std::string cmd, int fd)
 			return;
 
 		//6. Propagate change to all the client's channels
+
+		std::set<int> notified_fds; //new
+
 		std::vector<Channel>::iterator It;
 		for (It = _channels.begin(); It != _channels.end(); It++)
 		{
-			if (It->get_clientByname(oldNickname) == cli)
-				It->broadcast_messageExcept(MSG_NICK_UPDATE(oldNickname, nickname), fd); //notify all channel members
+			if (It->get_clientByFd(fd))
+				It->broadcast_messageExcept(MSG_NICK_UPDATE(oldNickname, nickname), fd, notified_fds); //notify all channel members
 		}
+		//clear list!!!
+
 
 		//7. Update the client's nickname
 		cli->set_nickname(nickname);

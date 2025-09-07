@@ -192,9 +192,9 @@ HEADER:
 public:
 typedef void (Server::*CommandHandler)(std::string, int);
 
-private:        
-std::map<KEY, VALUE> _NAME; 
-std::map<std::string, CommandHandler> _registrationCommands; 
+private:
+std::map<KEY, VALUE> _NAME;
+std::map<std::string, CommandHandler> _registrationCommands;
 
 
 PRIMERO PUBLIC Y DESPUES PRIVATE
@@ -212,7 +212,7 @@ std::map<KEY, VALUE>::iterator it = _NAME.find(cmdName);
 std::map<std::string, CommandHandler>::iterator it = _registrationCommands.find(cmdName);
 
 //3
-if (it != _registrationCommands.end()) 
+if (it != _registrationCommands.end())
 {
     CommandHandler handler = it->second; //es lo mismo que poner _registrationCommands[cmdName]
     (this->*handler)(cmd, fd);  //handler es simplemente el nombre
@@ -249,7 +249,7 @@ setters:
 
 
 /*
-Cuando recv() no leyó todo el mensaje porque el buffer es limitado (ejemplo 1024 bytes) y quedaron datos sin leer, 
+Cuando recv() no leyó todo el mensaje porque el buffer es limitado (ejemplo 1024 bytes) y quedaron datos sin leer,
 esos datos ya están en el buffer interno del sistema operativo (SO) para esa conexión TCP.
 
 Entonces:
@@ -276,3 +276,5 @@ dentro de init --> struct sockaddr_in addr;
 	//solo en estos casos, definimos tambien los elementos de addr, necesarios para usar 'bind' (en el caso de clientes nuevos omitimos esto)
 	//Esta estructura es la manera que el sistema operativo usa para representar direcciones de red IPv4 en C/C++
 	struct sockaddr_in addr;
+
+mode #arepas +o-o nick3 nick1 (primero el nuevo admin, despues el derrocado)

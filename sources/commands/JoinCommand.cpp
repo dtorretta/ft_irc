@@ -20,6 +20,9 @@ std::vector<std::pair<std::string, std::string> > Server::SplitJOIN(std::string 
 	// Split by spaces
 	std::vector<std::string> args = split_cmd(cmd); //Output: ["JOIN", "#chan1,#chan2", "key1,key2"]
 
+	if (args.size() < 2)
+		return (std::vector<std::pair<std::string, std::string> >());
+
 	// Split channels and keys (if existing) by comas
 	std::string channels_part = args[1]; // "#chan1,#chan2"
 	std::istringstream channel_stream(channels_part);
@@ -80,7 +83,10 @@ void	Server::Channel_Exist(Channel *channel, Client *client, int fd, std::string
 {
 	// Check if user is already in the channel
 	if (channel->get_clientByFd(fd) || channel->get_adminByFd(fd))
+	{
+		_sendResponse(ERROR_ALREADY_IN_CHANNEL(client->get_nickname(), channel->get_name()), fd);
 		return ;
+	}
 
 	// Check user channel limit
 	int count = 0;
@@ -159,6 +165,7 @@ void	Server::Channel_Exist(Channel *channel, Client *client, int fd, std::string
  */
 void	Server::Channel_Not_Exist(std::string channel_name, Client *client, int fd)
 {
+
 	Channel new_channel;
 	new_channel.set_server(this);
 	new_channel.set_name(channel_name);

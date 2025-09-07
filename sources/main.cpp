@@ -5,7 +5,7 @@ bool Server::_signalRecieved = false;
 
 void printBanner()
 {
-    std::cout   << "███████╗███████╗██████╗ ██╗   ██╗███████╗██████╗\n" 
+    std::cout   << "███████╗███████╗██████╗ ██╗   ██╗███████╗██████╗\n"
                 << "██╔════╝██╔════╝██╔══██╗██║   ██║██╔════╝██╔══██╗\n"
                 << "███████╗█████╗  ██████╔╝██║   ██║█████╗  ██████╔╝\n"
                 << "╚════██║██╔══╝  ██╔══██╗╚██╗ ██╔╝██╔══╝  ██╔══██╗\n"
@@ -27,34 +27,33 @@ int main (int ac, char** av)
 {
     if(ac != 3)
     {
-        std::cerr << RED << "Correct usage: ./ircserv [port] [password]" << RESET << std::endl; 
+        std::cerr << RED << "Correct usage: ./ircserv [port] [password]" << RESET << std::endl;
         return 1;
     }
-    
+
     try
-    { 
+    {
         if (!portValidation(av[1]) || std::string(av[2]).empty()) //es necesario limitar el largo de la pass?
             throw std::runtime_error("Error: Invalid Port or Password");
-        
+
         printBanner();
-        
+
         Server newServer(std::atoi(av[1]), std::string(av[2]));
-         
+
         //Signals
         std::signal(SIGINT, Server::signalHandler); // Ctrl+C
         std::signal(SIGTERM, Server::signalHandler); //kill -TERM <pid>
-        std::signal(SIGQUIT, SIG_IGN); // ignore Ctrl + back slash  
-        //std::signal(SIGTSTP, SIG_IGN); // ignore Ctrl + Z   
+        std::signal(SIGQUIT, SIG_IGN); // ignore Ctrl + back slash
 
-        newServer.init();        
+        newServer.init();
         std::cout << YELLOW << "Waiting for a client to get connected..." << RESET << std::endl;
         newServer.execute();
     }
-    catch(const std::exception& e) 
+    catch(const std::exception& e)
     {
         std::cerr << RED << e.what() << RESET << std::endl;
         return 1;
-    }  
+    }
     std::cout << "\nServer Closed!" << std::endl;
     return 0;
 }

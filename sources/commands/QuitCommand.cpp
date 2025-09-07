@@ -92,10 +92,11 @@ void	Server::QUIT(std::string cmd, int fd)
 	std::string reason = SplitQUIT(cmd);
 
 	//4. Broadcast message to channel(s)
+	std::set<int> notified_fds; //new
 	for (size_t i = 0; i < _channels.size(); i++)
 	{
 		if (_channels[i].get_clientByname(client_nick))
-			_channels[i].broadcast_message(MSG_QUIT(client_nick, client->get_username(), reason));
+			_channels[i].broadcast_message(MSG_QUIT(client_nick, client->get_username(), reason), notified_fds);
 	}
 
 	//5. Remove client and close empty channel(s)

@@ -18,6 +18,9 @@ std::vector<std::string> Server::SplitPART(std::string command)
 {
 	std::vector<std::string> args = split_cmd(command);  //Output: ["PART", "#chan1,#chan2"]
 
+	if (args.size() < 2)
+		return (std::vector<std::string>());
+
 	std::string channels_part = args[1]; // "#chan1,#chan2"
 	std::istringstream channel_stream(channels_part);
 	std::string single_channel;

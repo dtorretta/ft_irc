@@ -84,7 +84,7 @@ Server::~Server()
  * - Adds listening socket to poll monitoring array (pollfd listenPollFd)
  *
  * @throws std::runtime_error If socket creation, configuration, or binding fails
- * @note 
+ * @note
  *	socket --> creates a new TCP IPv4 socket. Its return value is a fd. This socket is the entry point for clients
  *	setsockopt --> to avoid “Address already in use” error when quickly restarting the server
  *	fcntl --> changes the socket mode so that read/write operations do not block the process
@@ -167,14 +167,14 @@ void Server::execute()
 					NewData(_fds[i].fd);
 			}
 		}
-			
+
 		// Procesar clientes marcados para QUIT
 		std::vector<Client>::iterator it;
 		for(it = _clients.begin(); it != _clients.end(); it++)
-		{	
+		{
 		    if (it->get_isQuitting())
 		    {
-		        ft_close(it->get_fd());              
+		        ft_close(it->get_fd());
 		        std::cout << YELLOW << "Client fd " << it->get_fd() << " disconnected\n" << RESET;
 		        break;
 		    }
@@ -195,9 +195,9 @@ void Server::execute()
  *
  * @throws std::runtime_error If accept() fails or socket configuration fails
  * @note Client begins in unregistered state and must complete authentication
- * - accept --> Extracts the first pending connection from the listening socket's queue and 
+ * - accept --> Extracts the first pending connection from the listening socket's queue and
  *              returns a new socket file descriptor connected to the client.
- * - fcntl --> Sets the newly accepted client socket to non-blocking mode so that read/write 
+ * - fcntl --> Sets the newly accepted client socket to non-blocking mode so that read/write
  *             operations will not block the server loop.
  * @see Client() constructor for initial client setup
  */
@@ -269,7 +269,7 @@ void Server::NewData(int clientFd)
 	currentClient->set_buffer(buffer);
 	const std::string& accumulatedBuffer = currentClient->get_buffer();
 	//std::cout << "DEBUG: Accumulated buffer for fd " << clientFd << ": " << GREEN << accumulatedBuffer << RESET << std::endl; //💡 to test fragmented commands
-	
+
 	//2. Check if the accumulated buffer contains one or more complete commands ending with \r\n
 	if (accumulatedBuffer.find("\r\n") == std::string::npos)
 		return; //If not found, return to poll() to wait for more data; it is not the end of the IRC command.
@@ -327,14 +327,14 @@ void Server::parser(const std::string &command, int fd)
 		(this->*handler)(cmd, fd);
 		return;
 	}
-		
+
 	//3. Check if the user is registered for channel commands and is logged in
 	if (isregistered(fd) && get_client(fd)->get_logedIn())
 	{
 		std::map<std::string, CommandHandler>::iterator it2 = _channelCommands.find(cmdName);
 		if (it2 != _channelCommands.end())
 		{
-			CommandHandler handler = it->second;
+			CommandHandler handler = it2->second;
 			(this->*handler)(cmd, fd);
 		}
 		else
@@ -377,6 +377,20 @@ std::vector<std::string> Server::split_receivedBuffer(std::string buffer)
 		if (!line.empty())
 			commands.push_back(line);
 		start = end + 2; //skip "\r\n"
+	}
+
+	start = 0;
+	while ((end = buffer.find("\n", start)) != std::string::npos)
+	{
+		// Skip if this \n is part of \r\n (already processed above)
+		if (end > 0 && buffer[end-1] == '\r') {
+			start = end + 1;
+			continue;
+		}
+		line = normalize_param(buffer.substr(start, end - start), false);
+		if (!line.empty())
+			commands.push_back(line);
+		start = end + 1; //skip "\n"
 	}
 	return commands;
 }

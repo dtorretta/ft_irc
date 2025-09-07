@@ -262,10 +262,7 @@ std::vector<std::string>	Server::SplitMODE(std::string cmd)
 	std::vector<std::string> result;
 	result.push_back(args[1]); // [0] = channel
 	if (args.size() == 2)
-	{
-		result.push_back("");
 		return (result);
-	}
 
 	std::string modeStrings = "";
 	std::vector<std::string> params;
@@ -345,14 +342,19 @@ void	Server::MODE(std::string cmd, int fd)
 		return ;
 	}
 	std::string channel_string = token[0];
-
 	//4. Display Mode
 	Channel *channel = get_channelByName(channel_string);
 	if (token.size() == 1)
 	{
 		if (!isChannelValid(channel, channel_string, client_nick, fd))
+		{
+			//_sendResponse(ERROR_CHANNEL_NOT_EXISTS(client_nick, channel_string), fd);
 			return ;
-		_sendResponse(MSG_CHANNEL_MODES(client_nick, channel_string, channel->get_activeModes()), fd);
+		}
+		std::string modes = channel->get_activeModes();
+		if (modes.empty())
+			modes = "+";
+		_sendResponse(MSG_CHANNEL_MODES(client_nick, channel_string, modes), fd);
 		_sendResponse(MSG_CREATION_TIME(client_nick, channel_string, channel->get_channelCreationTime()), fd);
 	}
 	//5. Handle Modes

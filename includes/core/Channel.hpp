@@ -87,7 +87,9 @@ class Channel
 	bool change_clientToAdmin(std::string& nick);
 	bool change_adminToClient(std::string& nick);
 	void broadcast_message(std::string reply);
+	void broadcast_message(std::string reply, std::set<int>& notified_fds);
 	void broadcast_messageExcept(std::string reply, int fd);
+	void broadcast_messageExcept(std::string reply, int fd, std::set<int>& notified_fds);
 };
 
 #endif

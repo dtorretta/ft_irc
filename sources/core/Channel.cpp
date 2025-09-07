@@ -55,6 +55,7 @@ void Channel::set_modeAtIndex(size_t index, bool mode){_modes[index].second = mo
 void Channel::set_channelCreationTime()
 {
 	std::time_t _time = std::time(NULL);
+	std::tm *timeinfo = std::localtime(&_time);
 	std::ostringstream oss;
 	oss << _time;
 	this->_createdAt = std::string(oss.str());
@@ -238,6 +239,28 @@ void Channel::broadcast_message(std::string reply)
 		_server->_sendResponse(reply, _clients[i].get_fd());
 }
 
+void Channel::broadcast_message(std::string reply, std::set<int>& notified_fds)
+{
+	//std::cout << "ENTRO AL BROADCAST" << std::endl; // borrar
+	for(size_t i = 0; i <_admins.size(); i++)
+	{
+		if(notified_fds.find(_admins[i].get_fd()) == notified_fds.end())
+		{
+
+			_server->_sendResponse(reply, _admins[i].get_fd());
+			notified_fds.insert(_admins[i].get_fd());
+		}
+	}
+	for(size_t i = 0; i < _clients.size(); i++)
+	{
+		if(notified_fds.find(_clients[i].get_fd()) == notified_fds.end())
+		{
+			_server->_sendResponse(reply, _clients[i].get_fd());
+			notified_fds.insert(_clients[i].get_fd());
+		}
+	}
+}
+
 /**
  * @brief Sends message to all channel members except specified file descriptor.
  * @param fd File descriptor to exclude from broadcast
@@ -253,5 +276,31 @@ void Channel::broadcast_messageExcept(std::string reply, int fd)
 	{
 		if(_clients[i].get_fd() != fd)
 			_server->_sendResponse(reply, _clients[i].get_fd());
+	}
+}
+
+void Channel::broadcast_messageExcept(std::string reply, int fd, std::set<int>& notified_fds)
+{
+	for(size_t i = 0; i < _admins.size(); i++)
+	{
+		if(_admins[i].get_fd() != fd)
+		{
+			if(notified_fds.find(_admins[i].get_fd()) == notified_fds.end())
+			{
+				_server->_sendResponse(reply, _admins[i].get_fd());
+				notified_fds.insert(_admins[i].get_fd());
+			}
+		}
+	}
+	for(size_t i = 0; i < _clients.size(); i++)
+	{
+		if(_clients[i].get_fd() != fd)
+		{
+			if(notified_fds.find(_clients[i].get_fd()) == notified_fds.end())
+			{
+				_server->_sendResponse(reply, _clients[i].get_fd());
+				notified_fds.insert(_clients[i].get_fd());
+			}
+		}
 	}
 }
