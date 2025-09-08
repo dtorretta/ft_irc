@@ -52,14 +52,7 @@ void Channel::set_password(std::string password){this->_password = password;}
 void Channel::set_name(std::string name){this->_name = name;}
 void Channel::set_topicRestriction(bool value){this->_topicRestriction = value;}
 void Channel::set_modeAtIndex(size_t index, bool mode){_modes[index].second = mode;}
-void Channel::set_channelCreationTime()
-{
-	std::time_t _time = std::time(NULL);
-	std::tm *timeinfo = std::localtime(&_time);
-	std::ostringstream oss;
-	oss << _time;
-	this->_createdAt = std::string(oss.str());
-}
+void Channel::set_channelCreationTime(){this->_createdAt = Server::getCurrentTime();}
 
 /*****************/
 /*    Getters    */
@@ -241,12 +234,10 @@ void Channel::broadcast_message(std::string reply)
 
 void Channel::broadcast_message(std::string reply, std::set<int>& notified_fds)
 {
-	//std::cout << "ENTRO AL BROADCAST" << std::endl; // borrar
 	for(size_t i = 0; i <_admins.size(); i++)
 	{
 		if(notified_fds.find(_admins[i].get_fd()) == notified_fds.end())
 		{
-
 			_server->_sendResponse(reply, _admins[i].get_fd());
 			notified_fds.insert(_admins[i].get_fd());
 		}

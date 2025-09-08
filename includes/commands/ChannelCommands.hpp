@@ -28,7 +28,7 @@ class Server;
 	/***TOPIC Command***/ \
 	void	TOPIC(std::string cmd, int fd); \
 	std::vector<std::string> SplitTopic(std::string cmd); \
-	std::string	getCurrentTime() \
+	static std::string	getCurrentTime(); \
 	/***INVITE Command***/ \
 	void	INVITE(std::string cmd, int fd); \
 	/***KICK Command***/ \
